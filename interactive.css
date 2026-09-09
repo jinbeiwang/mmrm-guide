@@ -1,10 +1,10 @@
 /* ============================================
-   INTERACTIVE DEMOS — Medical Research Theme
+   INTERACTIVE DEMOS — Statistical Precision
    ============================================ */
 
 /* Shared demo card base */
 [class$="-demo"] {
-  border-radius: 14px;
+  border-radius: 10px;
   padding: 28px;
   margin: 24px 0;
   position: relative;
@@ -12,30 +12,31 @@
 }
 
 [class$="-demo"] h4 {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
   margin-bottom: 16px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 [class$="-demo"] h4::before {
   content: '';
-  width: 4px;
-  height: 22px;
-  border-radius: 4px;
+  width: 3px;
+  height: 20px;
+  border-radius: 2px;
   flex: none;
+  background: var(--accent);
 }
 
 /* Buttons */
 .demo-btn {
-  padding: 8px 20px;
-  border-radius: 8px;
-  border: 1.5px solid var(--border-strong);
+  padding: 7px 18px;
+  border-radius: 6px;
+  border: 1px solid var(--border-strong);
   background: var(--surface);
   color: var(--ink);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all .2s var(--ease);
