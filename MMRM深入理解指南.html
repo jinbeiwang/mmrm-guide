@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MMRM 深入理解指南 · 从矩阵基础到监管应用</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['$$','$$'], ['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+<style>
+  :root {
+    --bg: #f4f2ec;
+    --card: #ffffff;
+    --ink: #252b33;
+    --muted: #6d7480;
+    --navy: #14304d;
+    --navy-2: #1d4569;
+    --gold: #c19a3d;
+    --gold-soft: #f6ecd4;
+    --teal: #0e6e60;
+    --red: #a23b2e;
+    --line: #e5e0d2;
+    --sidebar-w: 296px;
+    --code-bg: #0f1a2a;
+    --code-ink: #d8e4f2;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+    line-height: 1.85;
+    font-size: 16px;
+  }
+  h1, h2, h3, h4, .sec-ghost, .sb-title {
+    font-family: "Noto Serif SC", "Source Han Serif SC", Georgia, "Times New Roman", "Songti SC", SimSun, serif;
+  }
+
+  /* ============ 顶部阅读进度条 ============ */
+  .progress {
+    position: fixed; top: 0; left: 0; right: 0; height: 3px;
+    background: transparent; z-index: 300;
+  }
+  .progress-fill {
+    height: 100%; width: 0;
+    background: linear-gradient(90deg, var(--gold), #e0be6a);
+    box-shadow: 0 0 8px rgba(193,154,61,.6);
+    transition: width .1s linear;
+  }
+
+  /* ============ 左侧目录 ============ */
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: var(--sidebar-w);
+    background: linear-gradient(180deg, #0d1f33 0%, #14304d 100%);
+    color: #b9c9da;
+    display: flex; flex-direction: column;
+    z-index: 200;
+    transition: transform .3s ease;
+  }
+  .sb-brand {
+    display: flex; align-items: center; gap: 13px;
+    padding: 24px 22px 18px;
+    border-bottom: 1px solid rgba(255,255,255,.09);
+  }
+  .sb-logo {
+    width: 44px; height: 44px; flex: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--gold), #9a7a2c);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 700;
+    font-family: Georgia, serif;
+    box-shadow: 0 4px 12px rgba(0,0,0,.3);
+  }
+  .sb-title { font-size: 16.5px; font-weight: 700; color: #fff; line-height: 1.3; }
+  .sb-sub { font-size: 11px; color: #7d94ac; letter-spacing: .4px; margin-top: 3px; }
+  .sb-toc-label {
+    padding: 18px 22px 8px;
+    font-size: 12px; letter-spacing: 2px;
+    color: #7d94ac; text-transform: uppercase;
+  }
+  .sb-toc-label span { color: #4d657f; margin-left: 6px; }
+  .toc {
+    flex: 1; overflow-y: auto; padding: 0 0 12px;
+    scrollbar-width: thin; scrollbar-color: #2c4663 transparent;
+  }
+  .toc::-webkit-scrollbar { width: 5px; }
+  .toc::-webkit-scrollbar-thumb { background: #2c4663; border-radius: 3px; }
+  .toc-group {
+    font-size: 11px; color: #587490; letter-spacing: 1px;
+    padding: 14px 22px 5px;
+  }
+  .toc-group:first-child { padding-top: 4px; }
+  .toc-link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6.5px 14px 6.5px 22px;
+    color: #9db1c6; text-decoration: none;
+    font-size: 13.5px; line-height: 1.4;
+    border-left: 2px solid transparent;
+    transition: all .18s ease;
+    cursor: pointer;
+  }
+  .toc-link .num {
+    flex: none; width: 20px;
+    font-family: Consolas, Menlo, monospace;
+    font-size: 11.5px; color: #4d657f;
+    text-align: right;
+    transition: color .18s ease;
+  }
+  .toc-link:hover { color: #fff; background: rgba(255,255,255,.05); }
+  .toc-link:hover .num { color: var(--gold); }
+  .toc-link.active {
+    color: #fff;
+    background: linear-gradient(90deg, rgba(193,154,61,.16), rgba(193,154,61,.02) 80%);
+    border-left-color: var(--gold);
+    font-weight: 600;
+  }
+  .toc-link.active .num { color: var(--gold); }
+  .sb-foot {
+    padding: 16px 22px 18px;
+    border-top: 1px solid rgba(255,255,255,.09);
+    background: rgba(0,0,0,.14);
+  }
+  .sb-progress-label {
+    display: flex; justify-content: space-between;
+    font-size: 11.5px; color: #7d94ac; margin-bottom: 7px;
+  }
+  .sb-progress-label b { color: var(--gold); font-weight: 600; }
+  .sb-progress-track {
+    height: 5px; border-radius: 3px;
+    background: rgba(255,255,255,.12); overflow: hidden;
+  }
+  .sb-progress-fill {
+    height: 100%; width: 0;
+    background: linear-gradient(90deg, var(--gold), #e0be6a);
+    border-radius: 3px;
+    transition: width .15s linear;
+  }
+  .sb-hint { font-size: 10.5px; color: #4d657f; margin-top: 10px; }
+
+  /* ============ 移动端按钮 ============ */
+  .menu-btn, .fab-top {
+    position: fixed; z-index: 400;
+    width: 44px; height: 44px; border-radius: 50%;
+    border: none; cursor: pointer;
+    display: none; align-items: center; justify-content: center;
+    font-size: 19px; color: #fff;
+    background: var(--navy);
+    box-shadow: 0 4px 14px rgba(13,31,51,.35);
+    transition: all .25s ease;
+  }
+  .menu-btn { top: 14px; left: 14px; }
+  .fab-top {
+    bottom: 26px; right: 26px;
+    opacity: 0; pointer-events: none; transform: translateY(8px);
+    background: linear-gradient(135deg, var(--gold), #a8873a);
+  }
+  .fab-top.show { opacity: 1; pointer-events: auto; transform: none; }
+  .fab-top:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(160,130,55,.45); }
+  .sidebar-mask {
+    display: none; position: fixed; inset: 0;
+    background: rgba(10,20,32,.5); z-index: 190;
+  }
+
+  /* ============ 主区域 ============ */
+  .layout { margin-left: var(--sidebar-w); }
+  .main {
+    display: flex; justify-content: center;
+    padding: 0 32px 90px;
+  }
+  .content { width: 100%; max-width: 880px; }
+
+  /* ============ Hero ============ */
+  .hero {
+    position: relative; overflow: hidden;
+    border-radius: 20px;
+    margin: 30px 0 12px;
+    padding: 50px 48px 38px;
+    color: #fff;
+    background:
+      radial-gradient(1100px 480px at 88% -12%, rgba(193,154,61,.20), transparent 60%),
+      radial-gradient(900px 420px at -8% 112%, rgba(58,120,165,.30), transparent 55%),
+      linear-gradient(135deg, #0d2036 0%, #14304d 55%, #1b4368 100%);
+    box-shadow: 0 14px 38px rgba(13,31,51,.30);
+  }
+  .hero::before {
+    content: ""; position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.040) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.040) 1px, transparent 1px);
+    background-size: 44px 44px;
+    pointer-events: none;
+  }
+  .hero > * { position: relative; }
+  .hero-eyebrow {
+    font-size: 11.5px; letter-spacing: 2.5px;
+    color: #d9bd75; text-transform: uppercase;
+    margin-bottom: 14px; font-weight: 600;
+  }
+  .hero h1 {
+    margin: 0 0 6px; font-size: 34px; line-height: 1.25; font-weight: 700;
+  }
+  .hero-en {
+    font-size: 13.5px; color: #9db6cd; font-style: italic;
+    font-family: Georgia, serif; margin-bottom: 16px;
+  }
+  .hero-sub {
+    font-size: 15.5px; line-height: 1.9; color: #d7e1ec;
+    max-width: 720px; margin: 0 0 22px;
+  }
+  .hero-flow {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    margin: 0 0 26px;
+  }
+  .hero-flow span {
+    background: rgba(255,255,255,.10);
+    border: 1px solid rgba(255,255,255,.16);
+    color: #eef4fa;
+    border-radius: 8px; padding: 4px 12px;
+    font-size: 13px; font-weight: 500;
+    backdrop-filter: blur(2px);
+  }
+  .hero-flow i {
+    color: var(--gold); font-style: normal; font-size: 14px; font-weight: 700;
+  }
+  .hero-meta {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 1px; background: rgba(255,255,255,.10);
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 12px; overflow: hidden;
+    margin: 0 0 18px;
+  }
+  .hero-meta div {
+    background: rgba(13,32,54,.55);
+    padding: 12px 14px;
+  }
+  .hero-meta dt {
+    font-size: 10.5px; letter-spacing: 1.2px; color: #8ba3bd;
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .hero-meta dd { margin: 0; font-size: 13.5px; font-weight: 600; color: #f2f6fa; }
+  .hero-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 0 0 20px; }
+  .hstat {
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.13);
+    border-radius: 12px; padding: 14px 16px 12px;
+    text-align: center;
+  }
+  .hstat .v {
+    font-size: 30px; font-weight: 700; line-height: 1.1;
+    color: var(--gold); font-family: Georgia, serif;
+  }
+  .hstat .v small { font-size: 15px; font-weight: 400; color: #c9b384; }
+  .hstat .k { font-size: 11.5px; color: #a9bccf; margin-top: 5px; line-height: 1.4; }
+  .hero-note {
+    border-left: 3px solid var(--gold);
+    background: rgba(193,154,61,.10);
+    border-radius: 0 10px 10px 0;
+    padding: 11px 16px;
+    font-size: 13px; color: #e6d9b8; line-height: 1.8;
+  }
+
+  /* ============ 章节卡片 ============ */
+  section.sec {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 34px 38px 30px;
+    margin: 26px 0;
+    box-shadow: 0 1px 3px rgba(20,48,77,.05);
+    scroll-margin-top: 18px;
+  }
+  .sec-head {
+    display: flex; align-items: flex-start; gap: 16px;
+    padding-bottom: 14px; margin-bottom: 20px;
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+  .sec-head::after {
+    content: ""; position: absolute; left: 0; bottom: -1px;
+    width: 64px; height: 3px; border-radius: 2px;
+    background: linear-gradient(90deg, var(--gold), #e0be6a);
+  }
+  .sec-ghost {
+    font-size: 46px; font-weight: 800; line-height: .95;
+    color: rgba(20,48,77,.10);
+    flex: none; user-select: none;
+    letter-spacing: -2px;
+  }
+  .sec-title h2 {
+    margin: 2px 0 6px; font-size: 23px; color: var(--navy);
+    font-weight: 700; line-height: 1.35;
+  }
+  .sec-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    font-size: 11px; letter-spacing: .5px;
+    background: #eef1f5; color: var(--navy-2);
+    border: 1px solid #dde4ec;
+    border-radius: 20px; padding: 2px 11px; font-weight: 600;
+  }
+  .chip.gold { background: var(--gold-soft); color: #7a5f16; border-color: #e4d5ae; }
+  .chip-read { font-size: 11.5px; color: var(--muted); }
+  .chip-read::before { content: "· "; color: var(--gold); }
+
+  h3 {
+    color: var(--navy); font-size: 18.5px; font-weight: 700;
+    margin: 32px 0 12px; padding-left: 12px;
+    border-left: 3px solid var(--gold); line-height: 1.5;
+  }
+  h4 { color: #3d4a58; font-size: 16px; margin: 24px 0 8px; font-weight: 700; }
+  p { margin: 11px 0; }
+  a { color: var(--navy-2); }
+  strong { color: #16324f; }
+  .lead { font-size: 16px; color: #3f4753; }
+  .muted { color: var(--muted); font-size: 13.5px; }
+  ul, ol { padding-left: 26px; }
+  li { margin: 6px 0; }
+
+  /* ============ 提示框 ============ */
+  .note, .tip, .warn, .key, .refbox {
+    position: relative;
+    border-radius: 12px;
+    padding: 15px 18px 15px 56px;
+    margin: 18px 0;
+    border: 1px solid transparent;
+  }
+  .note, .tip, .warn, .key, .refbox::before { box-sizing: border-box; }
+  .note::before, .tip::before, .warn::before, .key::before, .refbox::before {
+    position: absolute; left: 15px; top: 15px;
+    width: 27px; height: 27px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: #fff;
+    font-family: Georgia, serif;
+  }
+  .note { background: #eef3f9; border-color: #d7e2ee; }
+  .note::before { content: "i"; background: var(--navy-2); }
+  .tip { background: #edf5ef; border-color: #d3e6d8; }
+  .tip::before { content: "✓"; background: var(--teal); }
+  .warn { background: #faf1e6; border-color: #eed9c0; }
+  .warn::before { content: "!"; background: var(--red); }
+  .key { background: var(--gold-soft); border-color: #e8d9b2; }
+  .key::before { content: "★"; background: #a8873a; font-size: 12px; }
+  .refbox { background: #f1eff8; border-color: #ddd7ee; }
+  .refbox::before { content: "§"; background: #5e4b8b; }
+  .note .lbl, .tip .lbl, .warn .lbl, .key .lbl, .refbox .lbl {
+    display: block; font-weight: 700; font-size: 14px; margin-bottom: 4px;
+  }
+  .note .lbl { color: var(--navy-2); }
+  .tip .lbl { color: #0b5a4e; }
+  .warn .lbl { color: #8c3b1e; }
+  .key .lbl { color: #7a5f16; }
+  .refbox .lbl { color: #5e4b8b; }
+
+  /* ============ 表格 ============ */
+  .tablewrap {
+    overflow-x: auto; margin: 18px 0;
+    border: 1px solid var(--line); border-radius: 12px;
+    background: #fff;
+  }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { border: none; padding: 10px 14px; text-align: left; vertical-align: top; }
+  thead th {
+    background: #eef1f5; color: var(--navy);
+    font-size: 12.5px; letter-spacing: .5px;
+    white-space: nowrap; position: relative;
+  }
+  thead th:not(:last-child)::after {
+    content: ""; position: absolute; right: 0; top: 20%; bottom: 20%;
+    width: 1px; background: #dde3ea;
+  }
+  tbody tr + tr td { border-top: 1px solid #eef0e9; }
+  tbody tr:nth-child(even) td { background: #faf8f2; }
+  tbody tr { transition: background .15s ease; }
+  tbody tr:hover td { background: #f4eeda; }
+
+  /* ============ 代码 ============ */
+  code {
+    font-family: Consolas, "SFMono-Regular", Menlo, "Liberation Mono", monospace;
+    background: #ece5d3; color: #8e3048;
+    padding: 1.5px 6px; border-radius: 5px; font-size: 14px;
+  }
+  .codeblock {
+    margin: 18px 0; border-radius: 12px; overflow: hidden;
+    background: var(--code-bg);
+    box-shadow: 0 6px 18px rgba(15,26,42,.22);
+  }
+  .code-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 16px;
+    background: rgba(255,255,255,.06);
+    border-bottom: 1px solid rgba(255,255,255,.09);
+  }
+  .code-head .lang {
+    font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: #7d94ac; font-weight: 600;
+  }
+  .copy-btn {
+    background: rgba(255,255,255,.08); color: #b9c9da;
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 6px; padding: 3px 12px;
+    font-size: 11.5px; cursor: pointer;
+    transition: all .18s ease;
+  }
+  .copy-btn:hover { background: rgba(193,154,61,.25); color: #fff; border-color: var(--gold); }
+  .codeblock pre {
+    margin: 0; padding: 16px 20px;
+    overflow-x: auto; line-height: 1.65; font-size: 13.5px;
+    color: var(--code-ink);
+  }
+  .codeblock pre code { background: transparent; color: inherit; padding: 0; font-size: inherit; }
+  .tok-kw { color: #82b8f0; font-weight: 500; }
+  .tok-str { color: #e2b27c; }
+  .tok-cmt { color: #7a9a72; font-style: italic; }
+  .tok-num { color: #b5d49a; }
+  .code-head .lang::before {
+    content: ""; display: inline-block; width: 8px; height: 8px;
+    border-radius: 50%; background: var(--gold);
+    margin-right: 7px; vertical-align: 1px;
+  }
+
+  /* ============ 数学与杂项 ============ */
+  .math-block {
+    text-align: center; margin: 18px 0;
+    overflow-x: auto; padding: 14px 10px;
+    background: #faf8f2;
+    border: 1px dashed #e0d8c2; border-radius: 10px;
+  }
+  .tag {
+    display: inline-block;
+    background: var(--gold-soft); color: #7a5f1c;
+    border: 1px solid #e4d5ae;
+    border-radius: 20px; padding: 1px 11px;
+    font-size: 12.5px; margin-right: 6px; font-weight: 600;
+  }
+  .foot {
+    text-align: center; color: var(--muted);
+    font-size: 13px; margin-top: 34px; line-height: 1.9;
+  }
+  .pager {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    margin-top: 28px;
+  }
+  .pager a {
+    display: block; text-decoration: none;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 14px 18px;
+    transition: all .2s ease;
+  }
+  .pager a:hover { border-color: var(--gold); box-shadow: 0 4px 14px rgba(193,154,61,.18); transform: translateY(-2px); }
+  .pager .dir { font-size: 11.5px; color: var(--muted); letter-spacing: 1px; display: block; margin-bottom: 3px; }
+  .pager .pt { font-size: 14.5px; color: var(--navy); font-weight: 600; }
+  .pager a.next { text-align: right; }
+
+  /* ============ 入场动画 ============ */
+  html.js section.sec { opacity: 0; transform: translateY(16px); }
+  html.js section.sec.visible {
+    opacity: 1; transform: none;
+    transition: opacity .55s ease, transform .55s ease;
+  }
+  html.js .hero { animation: heroIn .7s ease both; }
+  @keyframes heroIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+  /* ============ 响应式 ============ */
+  @media (max-width: 1180px) {
+    .sidebar { transform: translateX(-100%); box-shadow: 14px 0 40px rgba(0,0,0,.3); }
+    .sidebar.open { transform: none; }
+    .sidebar-mask.show { display: block; }
+    .menu-btn { display: flex; }
+    .layout { margin-left: 0; }
+  }
+  @media (max-width: 760px) {
+    .main { padding: 0 16px 70px; }
+    .hero { padding: 34px 24px 28px; margin-top: 66px; border-radius: 16px; }
+    .hero h1 { font-size: 26px; }
+    .hero-meta { grid-template-columns: 1fr 1fr; }
+    .hero-stats { grid-template-columns: 1fr 1fr; }
+    section.sec { padding: 24px 20px; border-radius: 14px; }
+    .sec-ghost { font-size: 34px; }
+    .pager { grid-template-columns: 1fr; }
+    .toc-link { font-size: 14px; padding: 8px 14px 8px 20px; }
+  }
+
+  /* ============ 打印 ============ */
+  @media print {
+    .sidebar, .progress, .menu-btn, .fab-top, .sidebar-mask, .pager, .copy-btn { display: none !important; }
+    .layout { margin-left: 0; }
+    body { background: #fff; }
+    html.js section.sec { opacity: 1 !important; transform: none !important; }
+    section.sec { break-inside: avoid-page; box-shadow: none; }
+    .hero { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+
+<button class="menu-btn" id="menuBtn" title="目录">☰</button>
+<div class="sidebar-mask" id="sbMask"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo">Σ</div>
+    <div>
+      <div class="sb-title">MMRM 深入理解指南</div>
+      <div class="sb-sub">MIXED MODEL FOR REPEATED MEASURES</div>
+    </div>
+  </div>
+  <div class="sb-toc-label">目录 <span>CONTENTS</span></div>
+  <nav class="toc" id="toc">
+    <div class="toc-group">第一部分 · 打基础</div>
+    <a class="toc-link" href="#s0"><span class="num">00</span><span class="txt">导读：本指南在讲什么</span></a>
+    <a class="toc-link" href="#s1"><span class="num">01</span><span class="txt">背景：纵向数据与三大难题</span></a>
+    <a class="toc-link" href="#s2"><span class="num">02</span><span class="txt">历史演进：从 LOCF 到 MMRM</span></a>
+    <a class="toc-link" href="#s3"><span class="num">03</span><span class="txt">矩阵知识速成（零基础）</span></a>
+    <a class="toc-link" href="#s4"><span class="num">04</span><span class="txt">线性回归回顾</span></a>
+    <div class="toc-group">第二部分 · 懂原理</div>
+    <a class="toc-link" href="#s5"><span class="num">05</span><span class="txt">MMRM 核心原理</span></a>
+    <a class="toc-link" href="#s6"><span class="num">06</span><span class="txt">协方差结构详解</span></a>
+    <a class="toc-link" href="#s7"><span class="num">07</span><span class="txt">缺失数据与 MAR 假设</span></a>
+    <a class="toc-link" href="#s8"><span class="num">08</span><span class="txt">REML 与 Kenward–Roger</span></a>
+    <a class="toc-link" href="#s9"><span class="num">09</span><span class="txt">手把手数值示例</span></a>
+    <div class="toc-group">第三部分 · 会落地</div>
+    <a class="toc-link" href="#s10"><span class="num">10</span><span class="txt">MMRM vs 其他方法</span></a>
+    <a class="toc-link" href="#s11"><span class="num">11</span><span class="txt">估计目标与 ICE（E9(R1)）</span></a>
+    <a class="toc-link" href="#s12"><span class="num">12</span><span class="txt">监管视角（FDA / EMA）</span></a>
+    <a class="toc-link" href="#s13"><span class="num">13</span><span class="txt">软件实现（SAS / R）</span></a>
+    <div class="toc-group">第四部分 · 避坑与速查</div>
+    <a class="toc-link" href="#s14"><span class="num">14</span><span class="txt">结果如何解读</span></a>
+    <a class="toc-link" href="#s15"><span class="num">15</span><span class="txt">常见误区与陷阱</span></a>
+    <a class="toc-link" href="#s16"><span class="num">16</span><span class="txt">参考文献</span></a>
+    <a class="toc-link" href="#s17"><span class="num">17</span><span class="txt">一页速查表</span></a>
+  </nav>
+  <div class="sb-foot">
+    <div class="sb-progress-label"><span>阅读进度</span><b id="pctText">0%</b></div>
+    <div class="sb-progress-track"><div class="sb-progress-fill" id="sbFill"></div></div>
+    <div class="sb-hint">公式由 MathJax 渲染 · 需联网加载</div>
+  </div>
+</aside>
+
+<div class="layout">
+<main class="main">
+<div class="content">
+
+<header class="hero">
+  <div class="hero-eyebrow">Statistical Programming · Study Guide</div>
+  <h1>MMRM 深入理解指南</h1>
+  <div class="hero-en">Mixed Model for Repeated Measures — 从矩阵基础到监管应用</div>
+  <p class="hero-sub">从零基础到监管应用：矩阵知识速成 → 线性回归回顾 → MMRM 核心原理 → 估计目标框架（ICH E9(R1)）→ 软件实现与结果解读。面向临床试验统计程序员与生物统计师，深入浅出、附带文献依据。</p>
+  <div class="hero-flow">
+    <span>矩阵基础</span><i>→</i><span>线性回归</span><i>→</i><span>MMRM 原理</span><i>→</i><span>协方差结构</span><i>→</i><span>估计推断</span><i>→</i><span>监管落地</span>
+  </div>
+  <dl class="hero-meta">
+    <div><dt>文档类型</dt><dd>深入学习指南</dd></div>
+    <div><dt>适合读者</dt><dd>统计程序员 · 生物统计师</dd></div>
+    <div><dt>覆盖软件</dt><dd>SAS PROC MIXED · R mmrm</dd></div>
+    <div><dt>估计框架</dt><dd>ICH E9(R1)</dd></div>
+    <div><dt>协方差结构</dt><dd>UN · AR(1) · CS · TOEP…</dd></div>
+    <div><dt>推断方法</dt><dd>REML + Kenward–Roger</dd></div>
+    <div><dt>缺失假设</dt><dd>MAR（随机缺失）</dd></div>
+    <div><dt>先修要求</dt><dd>无 · 矩阵从零讲起</dd></div>
+  </dl>
+  <div class="hero-stats">
+    <div class="hstat"><div class="v">18</div><div class="k">章节 · 循序渐进</div></div>
+    <div class="hstat"><div class="v">60<small> min</small></div><div class="k">建议阅读时间</div></div>
+    <div class="hstat"><div class="v">10</div><div class="k">UN 参数数（k=4 访视）</div></div>
+    <div class="hstat"><div class="v">0</div><div class="k">需要填补的缺失值</div></div>
+  </div>
+  <div class="hero-note">术语约定：MMRM = Mixed Model for Repeated Measures（重复测量的混合效应模型）；LOCF = Last Observation Carried Forward（末次观测结转）。左侧目录随阅读自动高亮当前位置。</div>
+</header>
+
+<!-- ===================== 0 ===================== -->
+<section class="sec" id="s0">
+  <div class="sec-head">
+    <span class="sec-ghost">00</span>
+    <div class="sec-title">
+      <h2>导读：这篇文章在讲什么</h2>
+      <div class="sec-meta"><span class="chip gold">开篇</span><span class="chip-read"></span></div>
+    </div>
+  </div>
+  <p class="lead">你已经把原文《TYPE=UN 不是标准答案：统计程序员如何理解 MMRM 的协方差结构》保存到本地，我通读后确认它的核心论点是：<strong>「TYPE=UN 不是标准答案」</strong>——统计程序员不能把 <code>TYPE=UN</code> 当成一行可直接复制的选项，而要理解协方差结构在描述什么、如何影响推断、以及如何判断它是否适合当前研究。本篇指南以这篇文章为线索，把 MMRM 从「矩阵基础」讲到「协方差结构」再到「监管与实现」，并专门补上原文强调、但多数教材略过的实践细节。</p>
+  <p>MMRM 的本质，可以用一句话概括：</p>
+  <div class="key"><span class="lbl">一句话理解 MMRM</span>
+    对于每一个受试者在一系列时间点上的重复测量结果，我们用一个<strong>均值模型</strong>（治疗 × 访视 + 协变量）来描述「平均轨迹」，再用一个<strong>协方差矩阵</strong>来描述「同一个受试者不同时间点测量值之间的相关性」，并在<strong>缺失数据随机（MAR）</strong>的假设下，利用所有观测数据做无偏、高效的推断。
+  </div>
+  <p>它之所以重要，是因为它同时解决了纵向数据最头疼的三件事（下一节详述）：<strong>组内相关、缺失数据、以及与治疗效应的交互随时间变化</strong>。</p>
+  <div class="note"><span class="lbl">阅读建议</span>
+    如果你对矩阵不熟，强烈建议<strong>按顺序</strong>读：先第 3 节矩阵速成，再第 4 节线性回归，最后读第 5 节 MMRM。第 3 节是专门为你补的，把「对角矩阵、正定矩阵、特征值」等概念用直觉和例子讲清楚，并明确告诉你<strong>每个概念在 MMRM 里到底用在哪</strong>。
+  </div>
+  <div class="refbox"><span class="lbl">关于资料来源</span>
+    已将你保存的原文《TYPE=UN 不是标准答案：统计程序员如何理解 MMRM 的协方差结构》通读并融入本篇。该文的观点与方法学文献一致：<a href="#s16">Mallinckrodt 等 2008</a>（MMRM 作为主分析的里程碑论文）、NRC 2010 报告、EMA 2010 缺失数据指南、Kenward–Roger 1997 方法论文，以及 PharmaSUG / PHUSE / pharmaverse（mmrm 包）等社区资源。文末有完整参考文献。
+  </div>
+</section>
+
+<!-- ===================== 1 ===================== -->
+<section class="sec" id="s1">
+  <div class="sec-head">
+    <span class="sec-ghost">01</span>
+    <div class="sec-title">
+      <h2>背景：纵向数据与三大难题</h2>
+      <div class="sec-meta"><span class="chip">基础篇</span><span class="chip-read"></span></div>
+    </div>
+  </div>
+  <h3>1.1 什么是纵向数据（longitudinal data）</h3>
+  <p>在临床试验里，「纵向数据」指的是：<strong>同一个受试者在多个时间点被重复测量</strong>同一个指标。典型例子：</p>
+  <ul>
+    <li>降糖药试验：每例受试者在第 0、4、8、12、24 周测量 HbA1c（糖化血红蛋白）；</li>
+    <li>抗抑郁药试验：在基线、第 1、2、4、6、8 周测量 HAMD-17（汉密尔顿抑郁量表）总分；</li>
+    <li>类风湿关节炎试验：在多个访视点测量 ACR20 / DAS28 等。</li>
+  </ul>
+  <p>假设有一项平行、随机、双盲、安慰剂对照试验，比较试验药（TRT）与安慰剂（PBO）对某连续型疗效终点的影响，共 $T=4$ 个访视（第 4、8、12、24 周）。每个受试者的数据像下面这样一行一条：</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>USUBJID</th><th>TRT</th><th>BASE（基线值）</th><th>AVISIT（访视）</th><th>AVAL（实测值）</th><th>CHG（相对基线的变化）</th></tr></thead>
+    <tbody>
+    <tr><td>PT-001</td><td>TRT</td><td>58</td><td>Week 4</td><td>55</td><td>-3</td></tr>
+    <tr><td>PT-001</td><td>TRT</td><td>58</td><td>Week 8</td><td>52</td><td>-6</td></tr>
+    <tr><td>PT-001</td><td>TRT</td><td>58</td><td>Week 12</td><td>51</td><td>-7</td></tr>
+    <tr><td>PT-001</td><td>TRT</td><td>58</td><td>Week 24</td><td>—（脱落）</td><td>—</td></tr>
+    <tr><td>PT-002</td><td>PBO</td><td>60</td><td>Week 4</td><td>59</td><td>-1</td></tr>
+    <tr><td colspan="6" class="muted">…（以此类推，每个受试者在其每个「实际观测到的」访视上占一行）</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>1.2 纵向数据的三大难题</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>难题</th><th>含义</th><th>为什么麻烦</th></tr></thead>
+    <tbody>
+    <tr><td><strong>① 组内相关</strong><br>(within-subject correlation)</td><td>同一个人的 4 个测量值不是独立的，彼此高度相关。</td><td>经典方差分析（ANOVA）和普通回归都假设「观测相互独立」。违反这个假设会导致标准误算错、检验失真。</td></tr>
+    <tr><td><strong>② 缺失数据</strong><br>(missing data / dropout)</td><td>受试者可能提前脱落、跳访视，后面的值观测不到。</td><td>直接丢掉缺失数据（complete-case）会损失信息且引入偏差；硬「填」一个数（如 LOCF）又会制造人为数据。</td></tr>
+    <tr><td><strong>③ 效应随时间变化</strong><br>(treatment × time interaction)</td><td>治疗组与对照组的差距往往随访视变化（例如疗效逐渐显现、或先快后慢）。</td><td>只分析单个时间点（如仅第 24 周）会浪费前面所有信息，且无法刻画「起效曲线」。</td></tr>
+    </tbody>
+  </table></div>
+  <p>MMRM 之所以成为金标准，正是因为它用「一个均值模型 + 一个协方差矩阵 + 似然推断」<strong>同时、优雅地</strong>处理了这三大难题。</p>
+</section>
+
+<!-- ===================== 2 ===================== -->
+<section class="sec" id="s2">
+  <div class="sec-head">
+    <span class="sec-ghost">02</span>
+    <div class="sec-title">
+      <h2>历史演进：从 LOCF 到 MMRM</h2>
+      <div class="sec-meta"><span class="chip">基础篇</span><span class="chip-read"></span></div>
+    </div>
+  </div>
+  <h3>2.1 LOCF 是什么、为什么当年流行</h3>
+  <p><strong>LOCF（末次观测结转）</strong>：受试者脱落或跳访视后，用他<strong>最后一次实际观测到的值</strong>，一直「填」到试验结束。之后就可以把这些填补后的数据当成完整数据，做普通的 ANOVA/ANCOVA。</p>
+  <p>它当年流行，是因为：</p>
+  <ul>
+    <li>实现极其简单（一行 data step 就能做）；</li>
+    <li>过去监管机构长期接受它作为「保守」的分析（当时的主流观念）；</li>
+    <li>大家习惯了对「完整矩形数据集」做 ANOVA 的成熟流程。</li>
+  </ul>
+
+  <h3>2.2 LOCF 的根本缺陷（为什么它被淘汰）</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>缺陷</th><th>解释</th></tr></thead>
+    <tbody>
+    <tr><td><strong>假设不合理</strong></td><td>LOCF 假设「脱落之后，疗效/病情永远冻结不变」。这对绝大多数疾病不成立——患者病情会继续恶化或好转，药效也会随时间变化。</td></tr>
+    <tr><td><strong>低估方差</strong></td><td>LOCF 把「结转的值」当成「真实观测」来算标准误，忽略了填补带来的不确定性，于是标准误<strong>偏小</strong>，检验倾向<strong>过于显著</strong>（I 类错误膨胀）。</td></tr>
+    <tr><td><strong>偏差方向不定</strong></td><td>LOCF 的偏差方向取决于「哪一组脱落更多、脱落者病情好坏」，因此<strong>既可能高估也可能低估治疗效应</strong>，无法事先判断，也不是所谓「恒保守」。</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note"><span class="lbl">关键认知</span>
+    LOCF 的「简单」是用<strong>统计正确性</strong>换来的。它既不无偏，也不保守，只是「看起来省事」。Siddiqui 等（2009）基于 25 个 NDA 数据集和模拟研究，系统比较了 MMRM 与 LOCF，结论支持 MMRM 作为主要分析。
+  </div>
+
+  <h3>2.3 转折点：三份里程碑文献</h3>
+  <ul>
+    <li><strong>Mallinckrodt 等（2008）</strong>《Recommendations for the Primary Analysis of Continuous Endpoints in Longitudinal Clinical Trials》：明确提出在 MAR 假设下，<strong>基于似然的重复测量模型（即 MMRM）应取代 LOCF</strong> 成为纵向连续终点的主要分析。</li>
+    <li><strong>美国国家研究委员会 NRC（2010）</strong>《The Prevention and Treatment of Missing Data in Clinical Trials》：由 FDA 委托、国家科学院发布，对 LOCF 等单一填补方法提出严厉批评，倡导「用假设明确、基于模型的方法 + 敏感性分析」。</li>
+    <li><strong>EMA（2010）</strong>《Guideline on missing data in confirmatory clinical trials》：同样推荐在 MAR 假设下使用基于似然的方法（MMRM / 混合模型）作为主分析，并强调缺失机制假设的重要性与敏感性分析。</li>
+  </ul>
+  <p>此后，MMRM 逐步成为慢性病、神经/精神、内分泌等领域纵向连续终点主要分析的事实标准。</p>
+</section>
+
+<!-- ===================== 3 ===================== -->
+<section class="sec" id="s3">
+  <div class="sec-head">
+    <span class="sec-ghost">03</span>
+    <div class="sec-title">
+      <h2>矩阵知识速成（零基础友好）</h2>
+      <div class="sec-meta"><span class="chip">基础篇</span><span class="chip-read"></span></div>
+    </div>
+  </div>
+  <p class="lead">这一节专门为你补课。目标不是「会做矩阵题」，而是<strong>建立直觉</strong>，让你能看懂 MMRM 里的协方差矩阵、正定矩阵、求逆、特征值这些词到底在说什么。每个概念结尾都标注「<span class="tag">在 MMRM 中的用处</span>」。</p>
+
+  <h3>3.1 从标量到矩阵：什么是矩阵</h3>
+  <p>标量（scalar）是一个数，如 $5$。向量（vector）是一列数，如 $\mathbf{x} = \begin{pmatrix} 3 \\ 4 \end{pmatrix}$。<strong>矩阵（matrix）就是一个按行列排布的数字表格</strong>，如：</p>
+  <div class="math-block">$$
+  A = \begin{pmatrix} 2 & 1 \\ 1 & 3 \end{pmatrix}
+  $$</div>
+  <p>它叫 $2 \times 2$ 矩阵（2 行 2 列）。一般地，$m \times n$ 矩阵有 $m$ 行、$n$ 列。矩阵里的元素记为 $a_{ij}$，表示第 $i$ 行第 $j$ 列的数。上面的 $a_{11}=2,\ a_{12}=1,\ a_{21}=1,\ a_{22}=3$。</p>
+  <p>在统计里，矩阵最常见的用途之一就是<strong>一次性表达一整批数据或一整组关系</strong>，而不是一个数一个数地写。</p>
+
+  <h3>3.2 转置（transpose）</h3>
+  <p>把矩阵沿「左上—右下对角线」翻转，行变列、列变行，记作 $A'$ 或 $A^\top$：</p>
+  <div class="math-block">$$
+  A = \begin{pmatrix} 2 & 1 \\ 1 & 3 \end{pmatrix}, \qquad A^\top = \begin{pmatrix} 2 & 1 \\ 1 & 3 \end{pmatrix}
+  $$</div>
+  <p>这个例子转置后没变，因为它正好是对称矩阵（见 3.6）。换个不对称的：$\begin{pmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \end{pmatrix}^\top = \begin{pmatrix} 1 & 4 \\ 2 & 5 \\ 3 & 6 \end{pmatrix}$。列向量 $\mathbf{x}$ 的转置就是行向量 $\mathbf{x}^\top$。</p>
+
+  <h3>3.3 矩阵加法与数乘</h3>
+  <p><strong>加法</strong>：同形状矩阵逐个元素相加。$\begin{pmatrix}1&2\\3&4\end{pmatrix}+\begin{pmatrix}5&6\\7&8\end{pmatrix}=\begin{pmatrix}6&8\\10&12\end{pmatrix}$。</p>
+  <p><strong>数乘</strong>：每个元素乘同一个数（标量）。$2\cdot\begin{pmatrix}1&2\\3&4\end{pmatrix}=\begin{pmatrix}2&4\\6&8\end{pmatrix}$。这对应统计里的「数据整体缩放」。</p>
+
+  <h3>3.4 矩阵乘法：最容易懵的一步</h3>
+  <p>矩阵乘法 $AB$ 的规则是「<strong>$A$ 的第 $i$ 行 × $B$ 的第 $j$ 列，对应相乘再相加</strong>」：</p>
+  <div class="math-block">$$
+  \underbrace{\begin{pmatrix} a & b \\ c & d \end{pmatrix}}_{A}
+  \underbrace{\begin{pmatrix} x_1 \\ x_2 \end{pmatrix}}_{x}
+  =
+  \begin{pmatrix} a x_1 + b x_2 \\ c x_1 + d x_2 \end{pmatrix}
+  $$</div>
+  <p>规则记忆：$A$ 的列数必须等于 $B$ 的行数，结果的行数取 $A$ 的行数、列数取 $B$ 的列数。<strong>顺序很重要</strong>：一般 $AB \ne BA$。</p>
+  <p><strong>为什么这样定义？</strong> 因为矩阵乘法就是「<strong>线性变换</strong>」的组合。看一个最有用的事实：</p>
+  <div class="math-block">$$
+  \underbrace{\begin{pmatrix} a & b \\ c & d \end{pmatrix}}_{A}
+  \underbrace{\begin{pmatrix} x_1 \\ x_2 \end{pmatrix}}_{x}
+  =
+  x_1 \underbrace{\begin{pmatrix} a \\ c \end{pmatrix}}_{\text{第1列}}
+  +
+  x_2 \underbrace{\begin{pmatrix} b \\ d \end{pmatrix}}_{\text{第2列}}
+  $$</div>
+  <p>即 $Ax$ 等于「$A$ 的各列按 $x$ 的分量加权求和」。这个视角在下一节讲回归设计矩阵 $X\beta$ 时会直接用到。<span class="tag">在 MMRM 中的用处</span> 模型写成 $\mathbf{y} = X\beta + \varepsilon$，$X\beta$ 就是「设计矩阵 $X$ 的列 × 回归系数 $\beta$ 的线性组合」。</p>
+
+  <h3>3.5 单位矩阵与对角矩阵</h3>
+  <p><strong>单位矩阵（identity matrix）</strong> $I$：主对角线上全为 1、其余为 0。它满足 $AI = IA = A$（相当于数字里的「1」）：</p>
+  <div class="math-block">$$
+  I = \begin{pmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \\ 0 & 0 & 1 \end{pmatrix}
+  $$</div>
+  <p><strong>对角矩阵（diagonal matrix）</strong>：只有主对角线上可以有非零元素，其余位置全是 0。例如：</p>
+  <div class="math-block">$$
+  D = \begin{pmatrix} 4 & 0 & 0 \\ 0 & 9 & 0 \\ 0 & 0 & 1 \end{pmatrix}
+  $$</div>
+  <p>直觉：对角矩阵就是「<strong>各维度互不牵连</strong>」——用 $D$ 去乘向量，只是把向量的每个分量分别缩放（乘 $4, 9, 1$），不会把一个分量「混」到另一个分量里。单位矩阵是「每个方向都缩放 1 倍」的特殊对角矩阵。</p>
+  <p><span class="tag">在 MMRM 中的用处</span> 如果各时间点的重复测量<strong>彼此独立且方差相同</strong>，协方差矩阵就是 $\sigma^2 I$——这是普通回归的假设。但纵向数据里时间点之间<strong>有相关</strong>，所以协方差矩阵的非对角位置不为 0，我们后面要处理的就是「非对角的那些数」。</p>
+
+  <h3>3.6 对称矩阵</h3>
+  <p>若 $A = A^\top$，即 $a_{ij} = a_{ji}$（关于主对角线镜像相等），就叫<strong>对称矩阵（symmetric matrix）</strong>：</p>
+  <div class="math-block">$$
+  \begin{pmatrix} 2 & \color{#8e3048}{1} \\ \color{#8e3048}{1} & 3 \end{pmatrix},\qquad
+  \text{注意两个 } 1 \text{ 关于主对角线对称}
+  $$</div>
+  <p><span class="tag">在 MMRM 中的用处</span> <strong>协方差矩阵天然是对称的</strong>，因为第 $i$、$j$ 两个时间点的协方差 $\mathrm{Cov}(Y_i, Y_j)$ 必然等于 $\mathrm{Cov}(Y_j, Y_i)$。这是协方差矩阵最重要的结构性质之一。</p>
+
+  <h3>3.7 行列式：面积/体积的缩放因子</h3>
+  <p>行列式 $\det(A)$ 是「方阵对应的一个标量」。2×2 时：$\det\begin{pmatrix}a&b\\c&d\end{pmatrix}=ad-bc$。</p>
+  <p>几何直觉：矩阵 $A$ 作用到平面图形上会把面积放大 $|\det(A)|$ 倍（负号表示「翻转」）。例如：</p>
+  <div class="math-block">$$
+  \det\begin{pmatrix}2&0\\0&3\end{pmatrix}=6 \quad \Longleftrightarrow \quad
+  \text{面积放大 } 6 \text{ 倍}
+  $$</div>
+  <p><span class="tag">在 MMRM 中的用处</span> 多元正态分布的密度函数里会出现 $\det(\Sigma)$（以及 $\Sigma^{-1}$），因此协方差矩阵的行列式直接进入模型的<strong>似然函数</strong>。行列式为 0 意味着矩阵「退化」（某方向被压缩成 0），不可逆、模型不可估。</p>
+
+  <h3>3.8 逆矩阵：矩阵版的「倒数/除法」</h3>
+  <p>数字里 $a \cdot a^{-1} = 1$；矩阵里，若方阵 $A$ 存在 $A^{-1}$ 使 $AA^{-1}=A^{-1}A=I$，则 $A^{-1}$ 叫 $A$ 的<strong>逆矩阵</strong>。有了逆，就能「解方程」：</p>
+  <div class="math-block">$$
+  Ax = b \quad \Longrightarrow \quad x = A^{-1} b
+  $$</div>
+  <p>注意：<strong>只有方阵、且行列式不为 0（满秩、可逆）的矩阵才有逆</strong>。$\begin{pmatrix}1&1\\2&2\end{pmatrix}$ 的行列式为 0（第二行是第一行的 2 倍，信息冗余），不可逆。</p>
+  <p><span class="tag">在 MMRM 中的用处</span> 求解回归系数要用到 $\left(X^\top V^{-1}X\right)^{-1}$（见第 4、5 节），其中要求协方差矩阵 $V$ 可逆，这又要求 $V$ 是<strong>正定矩阵</strong>（下一节）。</p>
+
+  <h3>3.9 特征值与特征向量（eigenvalue / eigenvector）</h3>
+  <p><strong>定义</strong>：对方阵 $A$，若存在非零向量 $\mathbf{v}$ 和数 $\lambda$，满足：</p>
+  <div class="math-block">$$
+  A\mathbf{v} = \lambda \mathbf{v}
+  $$</div>
+  <p>则 $\lambda$ 是 $A$ 的一个<strong>特征值</strong>，$\mathbf{v}$ 是对应的<strong>特征向量</strong>。</p>
+  <p><strong>直觉</strong>：$A$ 对向量 $\mathbf{v}$ 的作用，效果仅仅是「<strong>把 $\mathbf{v}$ 沿原方向拉伸/压缩了 $\lambda$ 倍</strong>」，而没有把它转向。特征向量就是那些「方向不变的轴」，特征值是沿这些轴的缩放倍率。</p>
+  <p><strong>例</strong>（对角矩阵最好懂）：</p>
+  <div class="math-block">$$
+  \begin{pmatrix} 4 & 0 \\ 0 & 9 \end{pmatrix}
+  \begin{pmatrix} 1 \\ 0 \end{pmatrix}
+  =
+  4\begin{pmatrix} 1 \\ 0 \end{pmatrix}, \qquad
+  \begin{pmatrix} 4 & 0 \\ 0 & 9 \end{pmatrix}
+  \begin{pmatrix} 0 \\ 1 \end{pmatrix}
+  =
+  9\begin{pmatrix} 0 \\ 1 \end{pmatrix}
+  $$</div>
+  <p>所以对角矩阵的特征值就是<strong>对角线上的数</strong>（4 和 9），特征向量就是坐标轴方向。</p>
+  <p><strong>例</strong>（对称矩阵，稍复杂）：$A=\begin{pmatrix}2&1\\1&2\end{pmatrix}$，解方程 $\det(A-\lambda I)=0$ 得 $\lambda=1$ 或 $3$。两个特征向量分别是 $\tfrac{1}{\sqrt2}\begin{pmatrix}1\\-1\end{pmatrix}$ 和 $\tfrac{1}{\sqrt2}\begin{pmatrix}1\\1\end{pmatrix}$（互为垂直）。</p>
+  <p>关键事实：<strong>对称矩阵的特征值一定是实数</strong>，且特征向量可以选成相互垂直（正交）。这让协方差矩阵（对称）可以被干净地「分解」。</p>
+  <p><span class="tag">在 MMRM 中的用处</span> ① 判断协方差矩阵是否正定（看特征值是否全为正）；② 理解主成分分析（PCA，主方向就是特征向量）；③ 数值上判断模型是否退化/接近奇异。</p>
+
+  <h3>3.10 正定矩阵与半正定矩阵</h3>
+  <p><strong>定义</strong>（针对对称矩阵 $A$）：对任意非零向量 $\mathbf{x}$，</p>
+  <div class="math-block">$$
+  \mathbf{x}^\top A \mathbf{x} > 0 \quad\Longleftrightarrow\quad A\ \text{正定（positive definite）}
+  $$</div>
+  <p>若改为 $\ge 0$，则是<strong>半正定（positive semidefinite）</strong>。</p>
+
+  <h4>先彻底搞懂 $\mathbf{x}^\top A \mathbf{x}$ 到底是什么</h4>
+  <p><strong>第一步：维度验算</strong>。设 $A$ 是 $n\times n$ 对称矩阵，$\mathbf{x}$ 是 $n\times 1$ 列向量，则 $\mathbf{x}^\top$ 是 $1\times n$ 行向量。乘法链的维度是：</p>
+  <div class="math-block">$$
+  \underbrace{\mathbf{x}^\top}_{1\times n}\ \cdot\ \underbrace{A}_{n\times n}\ \cdot\ \underbrace{\mathbf{x}}_{n\times 1}
+  \;=\; \underbrace{1\times 1}_{\text{一个数}}
+  $$</div>
+  <p>关键：<strong>无论 $A$ 多大、$\mathbf{x}$ 多长，$\mathbf{x}^\top A \mathbf{x}$ 的结果永远是一个单独的数</strong>（标量），不是向量、也不是矩阵。这个数叫做<strong>二次型（quadratic form）</strong>。</p>
+
+  <p><strong>第二步：2×2 具体展开</strong>。设对称矩阵 $A=\begin{pmatrix} a & b \\ b & c \end{pmatrix}$（对称要求右上 = 左下 = $b$），$\mathbf{x}=\begin{pmatrix} x_1 \\ x_2 \end{pmatrix}$，则：</p>
+  <div class="math-block">$$
+  \mathbf{x}^\top A \mathbf{x}
+  = \begin{pmatrix} x_1 & x_2 \end{pmatrix}
+    \begin{pmatrix} a & b \\ b & c \end{pmatrix}
+    \begin{pmatrix} x_1 \\ x_2 \end{pmatrix}
+  = a x_1^2 \;+\; 2b\, x_1 x_2 \;+\; c x_2^2
+  $$</div>
+  <p>这就是一个<strong>二元二次多项式</strong>：两个平方项（$a x_1^2$、$c x_2^2$）加上一个交叉项（$2b x_1 x_2$，注意系数是 $2b$，因为 $b$ 出现两次）。<strong>正定的意思就是：无论代入什么非零的 $(x_1, x_2)$，这个多项式的值永远 $\gt 0$</strong>。</p>
+
+  <p><strong>第三步：一个正定的例子</strong>。取 $A=\begin{pmatrix} 2 & 1 \\ 1 & 2 \end{pmatrix}$（即 $a=2,\ b=1,\ c=2$）：</p>
+  <div class="math-block">$$
+  \mathbf{x}^\top A \mathbf{x}
+  = 2x_1^2 + 2x_1x_2 + 2x_2^2
+  = 2\big(x_1^2 + x_1x_2 + x_2^2\big)
+  = 2\Big[\big(x_1 + \tfrac{x_2}{2}\big)^2 + \tfrac{3}{4}x_2^2\Big] \gt 0
+  $$</div>
+  <p>配方后是「两个平方和 × 正系数」：只要 $(x_1,x_2)$ 不全为零，结果就严格为正。所以 $A$ 正定——它的两个特征值（$1$ 和 $3$）也确实都 $\gt 0$。</p>
+
+  <p><strong>第四步：一个不正定的反例</strong>。取 $A=\begin{pmatrix} 1 & 2 \\ 2 & 1 \end{pmatrix}$（即 $a=1,\ b=2,\ c=1$）：</p>
+  <div class="math-block">$$
+  \mathbf{x}^\top A \mathbf{x} = x_1^2 + 4x_1x_2 + x_2^2
+  $$</div>
+  <p>代入 $\mathbf{x}=\begin{pmatrix} 1 \\ -1 \end{pmatrix}$ 得 $1 + 4(1)(-1) + 1 = -2 \lt 0$——出现了负值，所以它<strong>不是</strong>正定（它的特征值是 $3$ 和 $-1$，一正一负）。可见「二次型恒正」与「特征值全正」是<strong>同一件事的两种说法</strong>。</p>
+
+  <p><strong>等价判据（最重要）</strong>：对称矩阵 $A$ 正定 $\iff$ $A$ 的所有特征值都 $\gt 0$；半正定 $\iff$ 所有特征值 $\ge 0$。</p>
+  <p><strong>直觉</strong>：$\mathbf{x}^\top A \mathbf{x}$ 这个二次型可以理解成「二次能量」。正定意味着「无论你往哪个方向走，这个能量都是正的、不会塌陷到零以下」。</p>
+  <p><strong>为什么协方差矩阵必须半正定？</strong> 设随机向量 $\mathbf{Y}=(Y_1,\dots,Y_T)^\top$，协方差矩阵 $\Sigma=\mathrm{Cov}(\mathbf{Y})$。对任意系数向量 $\mathbf{a}$，线性组合 $Z=\mathbf{a}^\top \mathbf{Y}$ 是一个随机变量，它的方差：</p>
+  <div class="math-block">$$
+  \mathrm{Var}(Z) = \mathbf{a}^\top \Sigma \,\mathbf{a} \ge 0
+  $$</div>
+  <p>因为<strong>方差不可能为负</strong>，所以对任意 $\mathbf{a}$ 都有 $\mathbf{a}^\top\Sigma \mathbf{a}\ge 0$——这正是「$\Sigma$ 半正定」的定义。<strong>协方差矩阵天生半正定</strong>。若不存在任何非零 $\mathbf{a}$ 使方差严格等于 0（即各分量没有完美线性依赖），则 $\Sigma$ 进一步是<strong>正定</strong>的，从而可逆。</p>
+  <p><span class="tag">在 MMRM 中的用处</span> MMRM 的协方差矩阵 $\Sigma$ 必须<strong>正定</strong>：① 多元正态密度需要 $\Sigma^{-1}$ 和 $\det(\Sigma)$；② 广义最小二乘估计 $\left(X^\top V^{-1}X\right)^{-1}$ 需要 $V$ 可逆；③ 若估计出的 $\Sigma$ 不正定，SAS/R 会报错或给出负方差（模型退化）。</p>
+
+  <h3>3.11 协方差矩阵（variance–covariance matrix）</h3>
+  <p>把「方差」和「协方差」打包成一张对称表，就是协方差矩阵。对 $T$ 个时间点的测量 $(Y_1,\dots,Y_T)$：</p>
+  <div class="math-block">$$
+  \Sigma = \begin{pmatrix}
+  \mathrm{Var}(Y_1) & \mathrm{Cov}(Y_1,Y_2) & \cdots & \mathrm{Cov}(Y_1,Y_T) \\
+  \mathrm{Cov}(Y_2,Y_1) & \mathrm{Var}(Y_2) & \cdots & \mathrm{Cov}(Y_2,Y_T) \\
+  \vdots & \vdots & \ddots & \vdots \\
+  \mathrm{Cov}(Y_T,Y_1) & \mathrm{Cov}(Y_T,Y_2) & \cdots & \mathrm{Var}(Y_T)
+  \end{pmatrix}
+  $$</div>
+  <p>要点：</p>
+  <ul>
+    <li>主对角线上是各时间点的<strong>方差</strong>（衡量单个时间点上的离散程度）；</li>
+    <li>非对角是<strong>协方差</strong>（衡量两个时间点共同变化的程度），且关于对角线对称；</li>
+    <li>一个 $T\times T$ 的<strong>无结构（UN）</strong>协方差矩阵有 $\dfrac{T(T+1)}{2}$ 个需要估计的参数：$T$ 个方差 + $\dfrac{T(T-1)}{2}$ 个协方差。</li>
+  </ul>
+
+  <h3>3.12 相关矩阵 vs 协方差矩阵</h3>
+  <p>协方差的数值受量纲影响，不易比较。把协方差标准化就得到<strong>相关系数</strong>：</p>
+  <div class="math-block">$$
+  \rho_{ij} = \frac{\mathrm{Cov}(Y_i,Y_j)}{\sqrt{\mathrm{Var}(Y_i)\,\mathrm{Var}(Y_j)}}
+  $$</div>
+  <p>$\rho$ 在 $[-1,1]$ 之间，越接近 ±1 相关性越强。<strong>相关矩阵</strong>的对角线恒为 1，非对角是 $\rho_{ij}$。在 MMRM 里，AR(1)、CS 等结构经常用「相关系数」来直观描述（如「相邻访视相关 0.7」），再换算回协方差矩阵。</p>
+
+  <h3>3.13 Cholesky 分解：计算机怎么「算」正定矩阵</h3>
+  <p>对正定对称矩阵 $A$，存在唯一的<strong>下三角矩阵</strong> $L$（上三角全是 0）使得：</p>
+  <div class="math-block">$$
+  A = L L^\top
+  $$</div>
+  <p>这叫 <strong>Cholesky 分解</strong>。直觉：把「正定矩阵」拆成「一个下三角矩阵 × 它的转置」，就像把面积 $a^2$ 拆成 $a\times a$。它数值稳定、速度快。</p>
+  <p><span class="tag">在 MMRM 中的用处</span> ① 求解 $\Sigma^{-1}$、算 $\det(\Sigma)$、做广义最小二乘时，软件内部大量用 Cholesky；② 如果 Cholesky 分解失败，通常说明协方差矩阵<strong>不再正定</strong>（方差被估成 0 或负值），这就是「收敛失败 / 非正定」报错的数学根源。</p>
+
+  <h3>3.14 一张表：矩阵概念 → MMRM 里的位置</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>矩阵概念</th><th>一句话直觉</th><th>在 MMRM 中的具体位置</th></tr></thead>
+    <tbody>
+    <tr><td>矩阵 / 向量</td><td>数字排成表格 / 一列数</td><td>数据 $\mathbf{y}$、设计矩阵 $X$、系数 $\beta$、残差 $\varepsilon$</td></tr>
+    <tr><td>转置 $A^\top$</td><td>行列互换</td><td>$X^\top V^{-1}X$ 里的 $X^\top$</td></tr>
+    <tr><td>矩阵乘法</td><td>行×列相加</td><td>$X\beta$（线性预测）、$X^\top V^{-1}X$</td></tr>
+    <tr><td>单位矩阵 $I$</td><td>数字「1」的矩阵版</td><td>独立同方差假设 $\Sigma=\sigma^2 I$</td></tr>
+    <tr><td>对角矩阵</td><td>各维度互不牵连</td><td>各时间点方差 $\sigma_1^2,\dots,\sigma_T^2$ 排在对角线上</td></tr>
+    <tr><td>对称矩阵</td><td>关于对角线镜像相等</td><td>协方差矩阵天然对称</td></tr>
+    <tr><td>行列式 $\det$</td><td>体积缩放因子；=0 则退化</td><td>多元正态似然里的 $\det(\Sigma)$</td></tr>
+    <tr><td>逆矩阵 $A^{-1}$</td><td>矩阵版「倒数」</td><td>求解系数用 $\left(X^\top V^{-1}X\right)^{-1}$</td></tr>
+    <tr><td>特征值 $\lambda$</td><td>沿某方向的缩放倍率</td><td>判断 $\Sigma$ 是否正定（$\lambda$ 全&gt;0）</td></tr>
+    <tr><td>正定矩阵</td><td>「能量」恒为正、可逆</td><td>$\Sigma$ 必须正定，模型才可估</td></tr>
+    <tr><td>协方差矩阵 $\Sigma$</td><td>方差+协方差的对称表</td><td>MMRM 的核心：描述组内相关</td></tr>
+    <tr><td>Cholesky 分解</td><td>$A=LL^\top$</td><td>软件求逆/求行列式的数值引擎</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ===================== 4 ===================== -->
+<section class="sec" id="s4">
+  <div class="sec-head">
+    <span class="sec-ghost">04</span>
+    <div class="sec-title">
+      <h2>线性回归回顾（为 MMRM 铺垫）</h2>
+      <div class="sec-meta"><span class="chip">基础篇</span><span class="chip-read"></span></div>
+    </div>
+  </div>
+  <h3>4.1 普通线性回归的矩阵形式</h3>
+  <p>最经典的多元线性回归写成：</p>
+  <div class="math-block">$$
+  \mathbf{y} = X\beta + \varepsilon, \qquad \varepsilon \sim N(0,\ \sigma^2 I)
+  $$</div>
+  <ul>
+    <li>$\mathbf{y}$：$n\times 1$ 响应向量（所有受试者的结局）；</li>
+    <li>$X$：$n\times p$ <strong>设计矩阵</strong>（每行是一个观测，每列是一个预测变量/虚拟变量）；</li>
+    <li>$\beta$：$p\times 1$ 回归系数（未知，要估计）；</li>
+    <li>$\varepsilon$：$n\times 1$ 残差，假设<strong>独立同分布</strong>、方差相同 $\sigma^2$——这就是 $\sigma^2 I$ 的含义。</li>
+  </ul>
+  <p>最小二乘（OLS）解为：</p>
+  <div class="math-block">$$
+  \hat\beta = \left( X^\top X \right)^{-1} X^\top \mathbf{y}
+  $$</div>
+  <p>这其实就是「用矩阵做回归」。请记住这个形式，因为 MMRM 的解只是把里面的 $I$ 换成协方差矩阵 $V$（见第 8.1 节）。</p>
+
+  <h3>4.2 回归的关键假设在纵向数据里崩溃了</h3>
+  <p>$\varepsilon \sim N(0,\ \sigma^2 I)$ 意味着两件事：</p>
+  <ul>
+    <li><strong>同方差</strong>：每个观测的方差都是 $\sigma^2$；</li>
+    <li><strong>不相关</strong>：任意两个观测之间的协方差为 0。</li>
+  </ul>
+  <p>但纵向数据里，同一个受试者的 4 个测量值显然<strong>强相关</strong>。若硬用普通回归，等于「假装这 4 条记录来自 4 个不同的人」，<strong>样本量被虚增</strong>，标准误被严重低估，结论不可信。</p>
+  <p>因此我们需要把假设放宽为：</p>
+  <div class="math-block">$$
+  \mathbf{y} = X\beta + \varepsilon, \qquad \varepsilon \sim N(0,\ V)
+  $$</div>
+  <p>其中 $V$ 是一个<strong>分块对角</strong>的大矩阵：不同受试者之间独立（块之间为 0），同一个受试者内部的相关由 $\Sigma$ 描述：</p>
+  <div class="math-block">$$
+  V = \begin{pmatrix}
+  \Sigma & 0 & \cdots & 0 \\
+  0 & \Sigma & \cdots & 0 \\
+  \vdots & \vdots & \ddots & \vdots \\
+  0 & 0 & \cdots & \Sigma
+  \end{pmatrix}
+  $$</div>
+  <p>这一下子就过渡到了 MMRM 的数学骨架。$\Sigma$ 正是第 3 节讲的协方差矩阵，它的结构选择就是下一节的主题。</p>
+</section>
+
+<!-- ===================== 5 ===================== -->
+<section class="sec" id="s5">
+  <div class="sec-head">
+    <span class="sec-ghost">05</span>
+    <div class="sec-title">
+      <h2>MMRM 核心原理</h2>
+      <div class="sec-meta"><span class="chip gold">核心</span><span class="chip-read"></span></div>
+    </div>
+  </div>
+  <h3>5.1 模型设定（均值结构）</h3>
+  <p>MMRM 最常用的形式是「<strong>相对基线的变化值（change from baseline, CHG）</strong>」作为结局。对受试者 $i$、治疗组 $g$、访视 $j$：</p>
+  <div class="math-block">$$
+  \underbrace{\Delta Y_{ij}}_{\text{变化值}}
+  = \underbrace{\mu}_{\text{截距}}
+  + \underbrace{\tau_g}_{\text{治疗效应}}
+  + \underbrace{\beta_1 B_i}_{\text{基线协变量}}
+  + \underbrace{\gamma_j}_{\text{访视效应}}
+  + \underbrace{(\tau\gamma)_{gj}}_{\text{治疗×访视交互}}
+  + \underbrace{\varepsilon_{ij}}_{\text{残差}}
+  $$</div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>项</th><th>含义</th><th>作用</th></tr></thead>
+    <tbody>
+    <tr><td>$\mu$</td><td>总截距</td><td>基准水平</td></tr>
+    <tr><td>$\tau_g$</td><td>治疗主效应</td><td>组间总体差异</td></tr>
+    <tr><td>$\beta_1 B_i$</td><td>基线值作为协变量</td><td>校正基线差异、提高精度（ANCOVA 思想）</td></tr>
+    <tr><td>$\gamma_j$</td><td>访视（时间）主效应</td><td>刻画随时间变化的平均轨迹</td></tr>
+    <tr><td>$(\tau\gamma)_{gj}$</td><td>治疗×访视交互</td><td><strong>核心项</strong>：允许治疗效应<strong>随访视不同而不同</strong></td></tr>
+    <tr><td>$\varepsilon_{ij}$</td><td>残差</td><td>随机误差，服从协方差结构 $\Sigma$</td></tr>
+    </tbody>
+  </table></div>
+  <p>写成矩阵形式（每个受试者一块）：</p>
+  <div class="math-block">$$
+  \mathbf{y}_i = X_i \beta + \varepsilon_i, \qquad \varepsilon_i \sim N(0,\ \Sigma)
+  $$</div>
+  <p>其中 $\mathbf{y}_i$ 是该受试者所有访视的变化值向量，$X_i$ 是他的设计矩阵行块，$\Sigma$ 是共享的 $T\times T$ 组内协方差矩阵。</p>
+
+  <h3>5.2 关键辨析：「混合」到底混了什么</h3>
+  <p>很多教材会把「混合效应模型」和「随机截距/随机斜率模型」划等号，但经典 MMRM 有细微而重要的差别：</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>类型</th><th>如何描述「组内相关」</th><th>等价/对应</th></tr></thead>
+    <tbody>
+    <tr><td>随机截距模型<br>(random intercept)</td><td>给每个受试者加一个随机效应 $b_i\sim N(0,\sigma_b^2)$</td><td>数学上等价于<strong>复合对称（CS）</strong>协方差：所有时间点两两相关相同</td></tr>
+    <tr><td><strong>经典 MMRM</strong><br>(Mallinckrodt / Lane 推荐)</td><td>直接在<strong>残差</strong>层面给协方差矩阵 $\Sigma$（R-side，PROC MIXED 的 <code>REPEATED</code>）</td><td>$\Sigma$ 可取 UN、AR(1)、CS 等任意结构，<strong>比随机截距更灵活</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>结论：<strong>MMRM 是通过「残差协方差矩阵」来建模相关性的边际（marginal / population-averaged）模型</strong>，不依赖给每个受试者加随机效应。它比随机截距模型更一般——随机截距只能得到 CS 结构，而 MMRM 可以用 UN 让「每对时间点的相关都自由」。这也是为什么监管推荐的 MMRM 默认用 UN 结构。</p>
+
+  <h3>5.3 为什么 MMRM 能同时解决三大难题</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>难题</th><th>MMRM 的对策</th></tr></thead>
+    <tbody>
+    <tr><td>① 组内相关</td><td>协方差矩阵 $\Sigma$ 显式刻画「同一受试者各时间点的相关」，不再假装独立。</td></tr>
+    <tr><td>② 缺失数据</td><td>基于似然、利用全部观测数据，在 MAR 假设下给出有效推断（详见第 7 节），无需 LOCF。</td></tr>
+    <tr><td>③ 效应随时间变化</td><td>「治疗×访视交互」允许在每个访视点分别估计治疗差异。</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ===================== 6 ===================== -->
+<section class="sec" id="s6">
+  <div class="sec-head">
+    <span class="sec-ghost">06</span>
+    <div class="sec-title">
+      <h2>协方差结构详解（UN / AR(1) / CS / Toeplitz…）</h2>
+      <div class="sec-meta"><span class="chip gold">核心</span><span class="chip-read"></span></div>
+    </div>
+  </div>
+  <p>协方差结构决定了「$\Sigma$ 长什么样」。以 $T=3$ 个访视为例，把每种结构写出来（参数是待估计的）。</p>
+
+  <h3>6.1 无结构 UN（unstructured）—— 默认首选</h3>
+  <div class="math-block">$$
+  \Sigma_{UN} = \begin{pmatrix}
+  \sigma_1^2 & \sigma_{12} & \sigma_{13} \\
+  \sigma_{12} & \sigma_2^2 & \sigma_{23} \\
+  \sigma_{13} & \sigma_{23} & \sigma_3^2
+  \end{pmatrix}
+  $$</div>
+  <ul>
+    <li>每个时间点有自己的方差 $\sigma_j^2$，每对时间点有自己的协方差 $\sigma_{jk}$，<strong>互不约束</strong>；</li>
+    <li>参数个数 $= \dfrac{T(T+1)}{2}$（$T=4$ 时为 10 个）；</li>
+    <li><strong>优点</strong>：最灵活、几乎不假设相关模式，是 Mallinckrodt 等（2008）与监管实践中的默认选择；</li>
+    <li><strong>缺点</strong>：当 $T$ 很大时参数爆炸，可能导致<strong>收敛困难或非正定</strong>。</li>
+  </ul>
+
+  <h3>6.2 复合对称 CS（compound symmetry）</h3>
+  <div class="math-block">$$
+  \Sigma_{CS} = \begin{pmatrix}
+  \sigma^2 & \sigma^2\rho & \sigma^2\rho \\
+  \sigma^2\rho & \sigma^2 & \sigma^2\rho \\
+  \sigma^2\rho & \sigma^2\rho & \sigma^2
+  \end{pmatrix}
+  $$</div>
+  <ul>
+    <li>所有时间点方差相同（$\sigma^2$），任意两时间点相关系数相同（$\rho$），<strong>只有 2 个参数</strong>；</li>
+    <li>等价于「随机截距模型」；</li>
+    <li><strong>适用</strong>：当认为「相邻访视与相隔很远的访视相关性一样强」时（现实中较少见，常过于简化）。</li>
+  </ul>
+
+  <h3>6.3 一阶自回归 AR(1)</h3>
+  <div class="math-block">$$
+  \Sigma_{AR(1)} = \sigma^2 \begin{pmatrix}
+  1 & \rho & \rho^2 \\
+  \rho & 1 & \rho \\
+  \rho^2 & \rho & 1
+  \end{pmatrix}
+  $$</div>
+  <ul>
+    <li>相关性随「时间间隔」<strong>指数衰减</strong>：间隔 1 个访视相关 $\rho$，间隔 2 个访视相关 $\rho^2$，……；</li>
+    <li>只有 2 个参数（$\sigma^2$ 和 $\rho$）；</li>
+    <li><strong>适用</strong>：相邻时间点相关强、越远越弱（$|\rho|\lt 1$）。</li>
+  </ul>
+  <div class="warn"><span class="lbl">关键细节：AR(1) 用的是「访视顺序」，不是「实际时间距离」</span>
+    SAS 的普通 <code>AR(1)</code> 按 <code>REPEATED</code> 变量<strong>水平的出现顺序</strong>构造滞后关系，并不会把 <code>AVISITN</code> 的数值差自动当作真实时间差。例如访视编码为 W1、W2、W4、W6、W8、W12（数值 1、2、4、6、8、12）时，W2–W4 虽然实际隔 2 周，却被当作与 W1–W2 相同的「相邻」（lag-1）处理，共享同一个 $\rho$。<br>
+    若研究假设要求「相关性随<strong>实际时间距离</strong>衰减」，应改用连续时间坐标的空间结构，例如 <code>TYPE=SP(POW)(WEEK)</code>（空间幂结构）。两者不是同一协方差假设，选择需结合 SAP 与统计师判断。
+  </div>
+
+  <h3>6.4 Toeplitz（TOEP，带状 Toeplitz）</h3>
+  <div class="math-block">$$
+  \Sigma_{TOEP} = \begin{pmatrix}
+  \sigma^2 & \sigma_1 & \sigma_2 \\
+  \sigma_1 & \sigma^2 & \sigma_1 \\
+  \sigma_2 & \sigma_1 & \sigma^2
+  \end{pmatrix}
+  $$</div>
+  <ul>
+    <li>相关性只取决于「<strong>间隔的步数</strong>（lag）」，不取决于具体位置；间隔相同则协方差相同；</li>
+    <li>参数个数 $=T$（1 个方差 + $T-1$ 个 lag 协方差）；</li>
+    <li>比 AR(1) 灵活（不强制指数衰减），比 UN 省参数。</li>
+  </ul>
+
+  <h3>6.5 异质性版本：ARH(1)、CSH、TOEPH</h3>
+  <p>以上结构大多假设「各时间点方差相同」。若允许各时间点方差不同，就在名字后加 <strong>H（heterogeneous）</strong>：</p>
+  <ul>
+    <li><strong>ARH(1)</strong>：方差各点不同（$\sigma_1^2,\dots,\sigma_T^2$），但相关系数仍按 $\rho,\rho^2,\dots$ 衰减——共 $T+1$ 个参数；</li>
+    <li><strong>CSH</strong>：方差各点不同，但任意两点的相关系数相同 $\rho$——共 $T+1$ 个参数；</li>
+    <li><strong>TOEPH</strong>：方差各点不同 + 按 lag 的协方差——共 $2T-1$ 个参数。</li>
+  </ul>
+
+  <h3>6.6 如何选择协方差结构</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>结构</th><th>参数个数（T 个访视）</th><th>典型场景</th></tr></thead>
+    <tbody>
+    <tr><td>UN</td><td>$T(T+1)/2$</td><td><strong>默认/首选</strong>，访视数不太多时</td></tr>
+    <tr><td>AR(1) / ARH(1)</td><td>2 / $T+1$</td><td>相关随间隔衰减</td></tr>
+    <tr><td>CS / CSH</td><td>2 / $T+1$</td><td>相关与间隔无关（≈随机截距）</td></tr>
+    <tr><td>TOEP / TOEPH</td><td>$T$ / $2T-1$</td><td>相关仅取决于间隔步数</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note"><span class="lbl">实践共识</span>
+    ① 访视数适中（如 4–6 个）时，<strong>UN 是方法学推荐默认</strong>（Mallinckrodt 等 2008）；② 用信息准则（AIC / BIC）<strong>辅助</strong>比较，BIC 倾向选更简洁的模型；③ 若 UN 不收敛或非正定，退到 ARH(1)/CSH/TOEPH 等；④ 协方差结构的选择<strong>应在方案或 SAP 中预先规定</strong>，避免数据驱动滥用。
+  </div>
+  <div class="key"><span class="lbl">「默认」与「不是标准答案」并不矛盾</span>
+    <strong>方法学层面</strong>：UN 是监管与文献推荐的<em>起点默认</em>（无先验信息时最灵活、最不武断）。<br>
+    <strong>工程/实践层面</strong>：UN 绝不是一个「无需思考、直接复制」的选项——访视多时参数爆炸（6 访视即 21 个参数）、小样本易不收敛或非正定，此时必须回到 SAP 和诊断结果做判断。<br>
+    二者合起来才是完整理解：<strong>「UN 是默认出发点，而不是标准答案」</strong>。
+  </div>
+  <div class="warn"><span class="lbl">AIC/BIC 只能提供一部分证据</span>
+    UN 的 AIC 更小，只说明它在当前数据上拟合更灵活，<strong>不自动说明它就是最合理的主分析结构</strong>。正式选模还要结合：SAP 是否预先规定、是否收敛、协方差矩阵是否正定、Hessian/G 矩阵是否有异常、协方差参数是否极端、SE/LSMean/治疗差值是否稳定、结构是否符合访视设计与临床时间逻辑。PharmaSUG 2015 SP02 论文总结了协方差结构选择的常用方法，Häckl &amp; Koch（2023）则警示：模型设定含糊或不完整会导致 I 类错误膨胀。
+  </div>
+  <h3>6.7 按治疗组分别估计协方差参数：GROUP= 选项</h3>
+  <p><code>GROUP=TRTPN</code> 允许<strong>不同治疗组分别估计协方差参数</strong>，但各组仍使用<strong>同一种</strong> TYPE= 结构。它表达的是「同一结构、不同组参数」，而不是「A 组用 UN、B 组用 AR(1)」。</p>
+  <div class="codeblock">
+    <div class="code-head"><span class="lang">SAS</span><button class="copy-btn" type="button">复制</button></div>
+    <pre><code>REPEATED AVISITN / SUBJECT=USUBJID GROUP=TRTPN TYPE=UN;</code></pre>
+  </div>
+  <ul>
+    <li>两个治疗组、6 个访视时，单个 UN 需 21 个参数；加 <code>GROUP=TRTPN</code> 后两组分别估计，<strong>参数翻倍、收敛压力增大</strong>；</li>
+    <li>是否允许治疗组使用不同协方差参数，应由 SAP 或统计师确认，程序员不应自行决定。</li>
+  </ul>
+
+  <h3>6.8 统计程序员的协方差结构检查清单</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>检查项</th><th>要点</th></tr></thead>
+    <tbody>
+    <tr><td>SUBJECT= 标识</td><td>是否正确使用唯一受试者标识；同一受试者不得被拆成多个 ID</td></tr>
+    <tr><td>重复簇唯一性</td><td>每位受试者每个分析访视最多一条目标记录</td></tr>
+    <tr><td>REPEATED 变量</td><td>是否为计划分析访视；与数据排序、分析访视一致</td></tr>
+    <tr><td>数据顺序</td><td>同一 USUBJID 的记录连续且按访视顺序（AR(1)/TOEP 的滞后解释依赖顺序）</td></tr>
+    <tr><td>TYPE= 一致性</td><td>是否与 SAP 一致</td></tr>
+    <tr><td>参数数量</td><td>访视数对应的参数数是否合理（UN 增长最快）</td></tr>
+    <tr><td>收敛与正定</td><td>ConvergenceStatus、非正定、Hessian/G 矩阵警告、参数接近边界</td></tr>
+    <tr><td>空单元格</td><td>每个治疗组×访视是否有足够观测、是否存在空访视单元格</td></tr>
+    <tr><td>结果稳定性</td><td>换结构后 LSMean、治疗差值、SE、CI 是否异常变化</td></tr>
+    <tr><td>探索 vs 正式</td><td>是否把探索性结构比较误当成正式选模</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ===================== 7 ===================== -->
+<section class="sec" id="s7">
+  <div class="sec-head">
+    <span class="sec-ghost">07</span>
+    <div class="sec-title">
+      <h2>缺失数据与 MAR 假设</h2>
+      <div class="sec-meta"><span class="chip gold">核心</span><span class="chip-read"></span></div>
+    </div>
+  </div>
+  <h3>7.1 三种缺失机制</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>机制</th><th>英文</th><th>含义</th><th>MMRM 是否有效</th></tr></thead>
+    <tbody>
+    <tr><td>完全随机缺失</td><td>MCAR</td><td>缺失与否与任何数据（观测或未观测）都无关，纯随机。</td><td>✓ 有效（更一般情形）</td></tr>
+    <tr><td>随机缺失</td><td>MAR</td><td>缺失与否<strong>可能依赖于已观测到的数据</strong>（如之前的测量值、基线、分组、人口学），但与「缺失后本来应有的值」无关。</td><td>✓ 有效</td></tr>
+    <tr><td>非随机缺失</td><td>MNAR</td><td>缺失与否<strong>依赖于未观测的值本身</strong>（如「病情越重越不来随访」且这无法被已观测数据完全解释）。</td><td>⚠ 需敏感性分析</td></tr>
+    </tbody>
+  </table></div>
+  <p>MMRM 的<strong>核心假设是 MAR</strong>。注意 MAR 并不要求「缺失是随机的」，而是要求「缺失的原因可以被<strong>已观测到的信息</strong>解释」。</p>
+
+  <h3>7.2 为什么 MMRM 在 MAR 下有效（直觉）</h3>
+  <p>MMRM 基于<strong>似然（likelihood）</strong>，会用到每一个受试者的<strong>所有观测到的数据</strong>。当一个受试者脱落时，模型对他「缺失值本应是多少」的推断，来自两股信息：</p>
+  <ul>
+    <li><strong>他自己的历史轨迹</strong>（他之前几个访视的值）；</li>
+    <li><strong>全体受试者估计出的协方差结构 $\Sigma$</strong>（同类受试者的时间点之间如何相关）。</li>
+  </ul>
+  <p>换句话说，MMRM 是在「<strong>用相关性借力</strong>」：即使某个时间点没测到，只要它和已测时间点相关，模型就能从已观测信息里「推断」它。这比 LOCF 的「冻结」和 complete-case 的「丢弃」都更合理、更高效。</p>
+
+  <h3>7.3 MMRM 的局限：MNAR 与敏感性分析</h3>
+  <p>若缺失是 MNAR（例如病情恶化的患者恰好更可能脱落，且脱落后病情继续恶化），MMRM 的 MAR 假设被违背，结论可能有偏。因此监管指南要求：</p>
+  <ul>
+    <li>MMRM 作为<strong>主要分析</strong>（在 MAR 下）；</li>
+    <li>配以<strong>敏感性分析</strong>来检验结论稳健性，如模式混合模型（pattern-mixture）、选择模型（selection model）、<strong>参考填补（reference-based imputation，如 jump-to-reference）</strong>、临界点分析（tipping point）等。</li>
+  </ul>
+  <div class="tip"><span class="lbl">联系现代 estimands 框架</span>
+    ICH E9(R1) 引入「估计目标（estimand）」概念。对「治疗策略（treatment policy）」估计目标（无论是否停药都分析其所有数据），MMRM 配合适当的缺失数据策略是常见实现方式；而 MNAR 假设下的参考填补等方法，常作为该估计目标下的敏感性/替代分析出现。<strong>估计目标的五个属性与五种伴发事件处理策略，详见第 11 节。</strong>
+  </div>
+</section>
+
+<!-- ===================== 8 ===================== -->
+<section class="sec" id="s8">
+  <div class="sec-head">
+    <span class="sec-ghost">08</span>
+    <div class="sec-title">
+      <h2>估计与推断：REML 与 Kenward–Roger</h2>
+      <div class="sec-meta"><span class="chip gold">核心</span><span class="chip-read"></span></div>
+    </div>
+  </div>
+  <h3>8.1 广义最小二乘（GLS）估计 $\beta$</h3>
+  <p>当 $\Sigma$（从而 $V$）已知时，$\beta$ 的最优无偏估计是广义最小二乘：</p>
+  <div class="math-block">$$
+  \hat\beta = \left( X^\top V^{-1} X \right)^{-1} X^\top V^{-1} \mathbf{y}
+  $$</div>
+  <p>对比普通回归的 $\left(X^\top X\right)^{-1}X^\top\mathbf{y}$，只是把「$I$」换成了「$V^{-1}$」——<strong>相关性和异方差被 $V^{-1}$ 正确地加权</strong>了。$\hat\beta$ 的协方差矩阵为 $\left(X^\top V^{-1}X\right)^{-1}$。</p>
+
+  <h3>8.2 协方差参数：ML vs REML</h3>
+  <p>实际中 $\Sigma$ 未知，需要估计。有两种似然：</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>方法</th><th>最大化什么</th><th>特点</th></tr></thead>
+    <tbody>
+    <tr><td>最大似然 ML</td><td>完整数据似然</td><td>同时估计 $\beta$ 和 $\Sigma$，但<strong>方差成分有偏（偏小）</strong>，样本越小越明显</td></tr>
+    <tr><td><strong>限制性最大似然 REML</strong></td><td>投影掉固定效应后的「残差」似然</td><td><strong>方差成分近似无偏</strong>，是 MMRM 的<strong>推荐默认</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>直觉：ML 在估计方差时「没扣除估计 $\beta$ 消耗的自由度」，导致方差被低估；REML 先「把固定效应的信息剥离」，再对剩下的残差做似然，因此更公平。<strong>MMRM 一律用 REML</strong>。</p>
+
+  <h3>8.3 小样本自由度：Kenward–Roger（KR）与 Satterthwaite</h3>
+  <p>检验治疗差异时，需要给检验统计量一个「自由度 df」。大样本下无所谓，但临床试验样本量有限，df 近似不当会扭曲 p 值。</p>
+  <ul>
+    <li><strong>Kenward–Roger（KR）</strong>：不仅修正 df，还<strong>修正 $\hat\beta$ 协方差矩阵的偏倚</strong>（因为 $V$ 是估计出来的，不是已知的）。小样本下最稳健，是 MMRM 的<strong>推荐默认</strong>（SAS 用 <code>DDFM=KR</code>；R <code>mmrm</code> 包用 <code>mmrm_control(method="Kenward-Roger")</code> 指定）。</li>
+    <li><strong>Satterthwaite</strong>：另一种 df 近似，也常用。</li>
+    <li><strong>Containment / Residual</strong>：更简单、更老，小样本下表现较差。</li>
+  </ul>
+  <div class="note"><span class="lbl">要点</span>
+    完整的 MMRM 推断链 = <strong>REML 估计协方差 + GLS 估计固定效应 + Kenward–Roger 修正自由度</strong>。三者缺一，小样本推断都可能失真。
+  </div>
+</section>
+
+<!-- ===================== 9 ===================== -->
+<section class="sec" id="s9">
+  <div class="sec-head">
+    <span class="sec-ghost">09</span>
+    <div class="sec-title">
+      <h2>一个手把手的数值示例</h2>
+      <div class="sec-meta"><span class="chip">原理篇</span><span class="chip-read"></span></div>
+    </div>
+  </div>
+  <p>为了建立直觉，用一个<strong>极简例子</strong>走一遍「矩阵长什么样」。真实软件计算由 REML + KR 完成，这里展示结构。</p>
+
+  <h3>9.1 试验设定</h3>
+  <p>两组（TRT / PBO）、3 个访视（Week 4 / 8 / 12），终点为 CHG（相对基线变化）。假设协方差结构为 UN，估计出的 $\Sigma$（示意值）为：</p>
+  <div class="math-block">$$
+  \hat\Sigma = \begin{pmatrix}
+  25 & 15 & 10 \\
+  15 & 30 & 18 \\
+  10 & 18 & 36
+  \end{pmatrix}
+  $$</div>
+  <p>解读：</p>
+  <ul>
+    <li>对角线是方差：Week 4 方差 25、Week 8 方差 30、Week 12 方差 36（随时间略增）；</li>
+    <li>非对角是协方差：Week 4 与 Week 8 的协方差 15，相关 $\rho=\dfrac{15}{\sqrt{25\cdot 30}}\approx 0.55$，依此类推；</li>
+    <li>该矩阵<strong>正定</strong>（三个特征值都 &gt;0），因此可逆、模型可估。</li>
+  </ul>
+
+  <h3>9.2 模型方程：某受试者某访视</h3>
+  <p>假设 TRT 组某受试者基线 $B_i=60$。他在 Week 8 的期望 CHG 为：</p>
+  <div class="math-block">$$
+  E[\Delta Y] = \mu + \tau_{TRT} + \beta_1(60) + \gamma_{\text{Wk8}} + (\tau\gamma)_{TRT,\text{Wk8}}
+  $$</div>
+  <p>TRT 与 PBO 在 Week 8 的<strong>治疗差异</strong>（treatment difference）为：</p>
+  <div class="math-block">$$
+  \big[\tau_{TRT} + (\tau\gamma)_{TRT,\text{Wk8}}\big] - \big[\tau_{PBO} + (\tau\gamma)_{PBO,\text{Wk8}}\big]
+  $$</div>
+  <p>即「主效应差 + 交互差」。基线项 $\beta_1(60)$ 对两组同时加减，<strong>在求差时消掉</strong>，这正是协变量校正后 LS-means 对比的思路。</p>
+
+  <h3>9.3 假设的输出结果</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>访视</th><th>TRT LS-mean (SE)</th><th>PBO LS-mean (SE)</th><th>差异 (95% CI)</th><th>p 值</th></tr></thead>
+    <tbody>
+    <tr><td>Week 4</td><td>-4.2 (1.1)</td><td>-1.8 (1.1)</td><td>-2.4 (-5.5, 0.7)</td><td>0.13</td></tr>
+    <tr><td>Week 8</td><td>-7.5 (1.2)</td><td>-2.6 (1.2)</td><td>-4.9 (-8.2, -1.6)</td><td>0.004</td></tr>
+    <tr><td>Week 12</td><td>-9.3 (1.3)</td><td>-3.1 (1.3)</td><td>-6.2 (-9.8, -2.6)</td><td>0.001</td></tr>
+    </tbody>
+  </table></div>
+  <p>解读：疗效<strong>随访视逐渐显现并扩大</strong>——Week 4 尚无统计学意义，Week 8 起显著。这正是「治疗×访视交互」要捕捉的信息，是 LOCF/单时间点 ANCOVA 无法优雅呈现的。</p>
+</section>
+
+<!-- ===================== 10 ===================== -->
+<section class="sec" id="s10">
+  <div class="sec-head">
+    <span class="sec-ghost">10</span>
+    <div class="sec-title">
+      <h2>MMRM vs 其他方法对比</h2>
+      <div class="sec-meta"><span class="chip">应用篇</span><span class="chip-read"></span></div>
+    </div>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>方法</th><th>核心思想</th><th>缺失数据假设</th><th>优缺点</th></tr></thead>
+    <tbody>
+    <tr><td><strong>MMRM</strong></td><td>均值模型 + 组内协方差 + 似然</td><td>MAR</td><td>✓ 利用全部数据、效率高、灵活；⚠ 依赖 MAR、需正定收敛</td></tr>
+    <tr><td>LOCF</td><td>末次值冻结填补后做 ANOVA</td><td>隐含「缺失后不变」的强假设</td><td>✕ 假设不合理、低估方差、偏差方向不定</td></tr>
+    <tr><td>BOCF</td><td>基线值结转（baseline observation carried forward）</td><td>隐含「回到基线」</td><td>⚠ 常偏保守，但假设同样武断，仅作敏感性</td></tr>
+    <tr><td>单时间点 ANCOVA</td><td>只分析某个访视（如终点访视）的 CHG</td><td>需 complete-case 或填补</td><td>⚠ 浪费中间数据、对缺失敏感</td></tr>
+    <tr><td>多重填补 MI</td><td>用模型多次填补缺失值再合并</td><td>MAR（若用合适模型）</td><td>✓ 灵活、可并入多种数据；⚠ 实现复杂、依赖填补模型</td></tr>
+    <tr><td>模式混合 / 选择模型</td><td>显式对 MNAR 建模</td><td>MNAR</td><td>✓ 可做敏感性；⚠ 需不可检验的假设</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note"><span class="lbl">一句话定位</span>
+    MMRM 是「MAR 假设下纵向连续终点主分析」的最佳默认；MNAR 情况靠敏感性分析（如参考填补、模式混合）来兜底。
+  </div>
+</section>
+
+<!-- ===================== 11 ===================== -->
+<section class="sec" id="s11">
+  <div class="sec-head">
+    <span class="sec-ghost">11</span>
+    <div class="sec-title">
+      <h2>估计目标与伴发事件处理策略（ICH E9(R1)）</h2>
+      <div class="sec-meta"><span class="chip gold">核心</span><span class="chip-read"></span></div>
+    </div>
+  </div>
+  <p class="lead">读到这里你可能会问：MMRM「利用全部观测数据」听起来理所当然——但患者<strong>停药以后</strong>的随访数据，到底该不该纳入分析？用了<strong>补救用药以后</strong>的数值还算「试验药的效果」吗？这些问题的答案不在统计模型里，而在<strong>你想回答的临床问题</strong>里。这正是 ICH E9(R1)「估计目标（estimand）」框架要解决的问题，也是理解「为什么同样是 MMRM，不同试验纳入的数据集却不一样」的钥匙。</p>
+
+  <h3>11.1 为什么需要估计目标框架</h3>
+  <p>传统方案里一句「评价试验药治疗 2 型糖尿病的有效性」其实是含糊的：</p>
+  <ul>
+    <li>患者因不良事件在第 8 周停药，他停药后的数据还算「试验药治疗下的结果」吗？</li>
+    <li>患者从第 12 周起加了补救用药（如二甲双胍加量），之后的 HbA1c 还能归因于试验药吗？</li>
+    <li>不同的人对这些问题的理解不同，不同的理解会导出<strong>不同的分析人群、不同的数据集、不同的模型</strong>——而在旧框架下，这些选择往往隐藏在「标准做法」里，直到审评争议出现才被翻出来。</li>
+  </ul>
+  <p>ICH 于 <strong>2019 年 11 月 20 日</strong>定稿的 E9(R1) 附录《Estimands and Sensitivity Analysis in Clinical Trials》（欧盟自 2020 年 7 月起实施）要求：<strong>先精确地定义要估计什么（估计目标），再据此选择统计方法与敏感性分析</strong>。核心思想一句话：<strong>把「想回答什么问题」与「用什么方法回答」拆开——前者先想清楚，后者才有依据</strong>。</p>
+  <div class="key"><span class="lbl">术语速记：estimand / estimator / estimate</span>
+    <strong>estimand（估计目标）</strong>= 要估计的「东西」，是对临床问题的精确刻画（问题层面）；<strong>estimator（估计量）</strong>= 用来估计它的统计方法/公式，如 MMRM（方法层面）；<strong>estimate（估计值）</strong>= 代入数据后算出的数值结果（数值层面）。三者递进：先定 estimand，再选 estimator，最后得到 estimate。常见误区是把「估计目标」与「主要分析」混为一谈——后者只是前者的实现方式之一。
+  </div>
+
+  <h3>11.2 估计目标的五个属性</h3>
+  <p>E9(R1) 规定，一个完整的估计目标由五个属性共同精确定义：</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>属性</th><th>含义</th><th>贯穿示例（本指南的 HbA1c 试验）</th></tr></thead>
+    <tbody>
+    <tr><td><strong>① 治疗</strong><br>(Treatment)</td><td>关注的治疗条件。需明确是「按随机分组」（as randomized）还是「按实际接受的治疗」（as administered）</td><td>试验药 10 mg qd vs 安慰剂（按随机分组）</td></tr>
+    <tr><td><strong>② 人群</strong><br>(Population)</td><td>目标患者人群（兴趣人群），常即随机化人群或其明确定义的子集</td><td>随机化的成年 2 型糖尿病患者</td></tr>
+    <tr><td><strong>③ 变量</strong><br>(Variable)</td><td>关注的终点/结局变量（受试者层面的取值）</td><td>第 24 周 HbA1c 相对基线的变化值（CHG）</td></tr>
+    <tr><td><strong>④ 伴发事件处理策略</strong><br>(Handling of intercurrent events)</td><td>对每一个伴发事件分别指定处理策略（见 11.4）——E9(R1) 的独有贡献</td><td>停药、补救用药均采用治疗策略（见下文示例）</td></tr>
+    <tr><td><strong>⑤ 总体层面汇总</strong><br>(Population-level summary)</td><td>把受试者层面的变量汇总为总体结论的统计量</td><td>两组 LS-mean 之差（TRT − PBO）</td></tr>
+    </tbody>
+  </table></div>
+  <p>第 ④ 个属性正是与 MMRM 关系最紧密的部分：<strong>策略决定了哪些观测进入模型、被排除的数据如何解释</strong>。换句话说，第 7 节讨论的「缺失数据怎么办」，在 E9(R1) 框架下要先回答「这个伴发事件我们想怎么处理」。</p>
+
+  <h3>11.3 什么是伴发事件（intercurrent event, ICE）</h3>
+  <p><strong>定义</strong>：开始治疗之后发生的、会影响「与临床问题相关的测量值的解释或存在性」的事件。临床试验中最常见的 ICE：</p>
+  <ul>
+    <li><strong>停药/终止试验治疗</strong>（因不良事件、缺乏疗效、受试者要求退出等）；</li>
+    <li><strong>使用补救用药或方案禁用的合并治疗</strong>（rescue medication）；</li>
+    <li><strong>换用/加用其他有效治疗</strong>（treatment switching）；</li>
+    <li><strong>死亡</strong>（特殊的 ICE：它使绝大多数疗效变量「不复存在」，E9(R1) 对其有专门讨论，实践中常与复合策略结合处理）。</li>
+  </ul>
+  <div class="warn"><span class="lbl">三个极易混淆的概念</span>
+    ① <strong>伴发事件 ≠ 不良事件</strong>：intercurrent 与 adverse 是两个不同维度的概念——AE 属于安全性范畴，ICE 属于估计目标框架；一次 AE 可以同时构成 ICE（如因 AE 停药），也可以不构成；<br>
+    ② <strong>伴发事件 ≠ 缺失数据</strong>：ICE 发生后数据仍可能继续被观测（停药但坚持随访，数据照常收集）；反过来，数据缺失不一定由 ICE 引起（如单纯失访）。E9(R1) 明确指出「缺失数据本身不是伴发事件」，但 ICE 的处理策略决定了缺失数据如何被对待；<br>
+    ③ <strong>策略可以组合</strong>：一个估计目标可以对<strong>不同的 ICE 采用不同策略</strong>（如对「停药」用治疗策略、对「补救用药」用假想策略），这是完全正当且常见的做法。
+  </div>
+
+  <h3>11.4 五种处理策略（每种都带 PT-003 的例子）</h3>
+  <p>仍然用贯穿示例：2 型糖尿病试验，主要终点为第 24 周 HbA1c 相对基线变化。设想试验药组的 PT-003 轨迹如下：</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>受试者</th><th>组别</th><th>Week 4 CHG</th><th>Week 8 CHG</th><th>Week 12 CHG</th><th>Week 24 CHG</th><th>时间线</th></tr></thead>
+    <tbody>
+    <tr><td>PT-003</td><td>TRT</td><td>-2.1</td><td>-1.0</td><td>+0.5</td><td>+1.2</td><td>第 8 周因缺乏疗效停药；第 12 周起使用补救用药，但仍在随访</td></tr>
+    </tbody>
+  </table></div>
+  <p>注意：PT-003 停药后<strong>没有失访</strong>，四个访视都有观测值。同一个人、同一份数据，在五种策略下的「待遇」完全不同——</p>
+
+  <h4>策略一：治疗策略（treatment policy strategy）</h4>
+  <p><strong>含义</strong>：ICE 的发生与否与估计目标无关——无论患者是否停药、是否用了补救药，其<strong>所有观测数据照常纳入分析</strong>，变量取值不因 ICE 的发生而改变。</p>
+  <p><strong>回答的临床问题</strong>：「把试验药作为一套常规治疗策略来用（现实中允许停药、允许补救）时，与对照相比效果如何？」——偏向<strong>实效（effectiveness）</strong>视角，而非「理想条件下能有多好」。</p>
+  <p><strong>PT-003 的待遇</strong>：四个访视值（-2.1、-1.0、+0.5、+1.2）全部进入 MMRM；Week 12/24 的数值虽然发生在停药与补救之后，照用不误。</p>
+  <p><strong>与 MMRM 的关系</strong>：这是与 MMRM 最经典的搭配——「MMRM 用全部观测数据」正是治疗策略估计目标的典型实现。若患者停药后<strong>不再随访</strong>（后续访视缺失），则缺失部分在 MAR 假设下由似然推断「借力」（回到第 7 节的讨论）。</p>
+
+  <h4>策略二：假想策略（hypothetical strategy）</h4>
+  <p><strong>含义</strong>：估计「假如 ICE 不发生，结果会是多少」这一<strong>假想情景</strong>下的效应。ICE 发生后的观测通常不再代表「无 ICE 情形下的治疗结果」，因此一般从主分析中排除（或按假想情景专门建模）。</p>
+  <p><strong>回答的临床问题</strong>：「假如没有补救用药可用，第 24 周的组间差异会是多少？」——纯粹的<strong>药物本身效应（efficacy）</strong>视角。</p>
+  <p><strong>PT-003 的待遇</strong>：若关注的 ICE 是「补救用药」，则 Week 12、Week 24 的观测（补救之后）被剔除；MMRM 只用 Week 4、Week 8 的数据，其 Week 12/24 的「假想值」在 MAR 下由模型基于他的历史轨迹与协方差结构推断。</p>
+  <p><strong>与 MMRM 的关系</strong>：典型实现是「截断数据集上的 MMRM」——在 ADaM 中基于补救用药开始日期把之后的访视 flag 掉（如置分析 flag 为 N 或定义新参数），再跑同一个模型；也可用多重填补在假想情景下插补后分析。</p>
+
+  <h4>策略三：复合变量策略（composite variable strategy）</h4>
+  <p><strong>含义</strong>：把 ICE 本身<strong>并入变量的定义</strong>——「发生了 ICE」直接体现为变量取值的一部分，而不是决定哪些数据可用。</p>
+  <p><strong>回答的临床问题</strong>：「治疗的综合价值（疗效 + 耐受 + 依从）如何？」——把「能坚持治疗并获益」作为成功标准的一部分。</p>
+  <p><strong>PT-003 的待遇</strong>：定义二分类终点「完成 24 周治疗且 HbA1c 较基线下降 ≥ 1%」；PT-003 第 8 周即停药，无论其后续 HbA1c 数值如何，直接判为「未达标」。</p>
+  <p><strong>与 MMRM 的关系</strong>：变量被重新定义后往往不再是「连续型重复测量」——分析可能变成 logistic 回归、CMH、时间-事件分析等，MMRM 不再适用。教科书级的范例是肿瘤学的 PFS：把「疾病进展或死亡」并入同一个时间-事件变量（这也是死亡作为 ICE 时最常用的处理方式之一）。</p>
+
+  <h4>策略四：在治策略（while on treatment strategy）</h4>
+  <p><strong>含义</strong>：只用患者<strong>仍在接受指定治疗期间</strong>（即 ICE 发生之前）的观测，关注「用药期间」的效应。它介于治疗策略（全要）与假想策略（假设 ICE 不发生）之间：既不假装停药没发生，也不追问停药后的假想结局。</p>
+  <p><strong>回答的临床问题</strong>：「患者实际服用试验药期间，药物对终点的影响如何？」</p>
+  <p><strong>PT-003 的待遇</strong>：只用 Week 4、Week 8 的观测；Week 12、Week 24 即使有实测值（+0.5、+1.2）也不纳入，因为那时他已不在治。</p>
+  <p><strong>与 MMRM 的关系</strong>：同样是「截断的 MMRM」，但截断时点是「停止治疗之日」而非「补救开始之日」。E9(R1) 同时提醒：若 ICE 的发生本身就预示治疗不再有获益（如因缺乏疗效停药），在治策略的解读要格外小心，因为「在治人群」可能是一个预后良好的选择亚集。</p>
+
+  <h4>策略五：主层策略（principal stratum strategy）</h4>
+  <p><strong>含义</strong>：把目标人群（属性②）重新限定在一个由 ICE 行为定义的<strong>潜在子集（主分层，principal strata）</strong>内。主分层的依据是「假如被分到任一组<strong>都会</strong>（或都不会）发生 ICE」的潜在行为，而非实际发生了什么——这一概念源自 Frangakis &amp; Rubin（2002）的因果推断工作。</p>
+  <p><strong>回答的临床问题</strong>：「对能够坚持治疗的患者（无论分到哪组都会坚持），药物效应如何？」</p>
+  <p><strong>PT-003 的待遇</strong>：他是否属于「两组中都会坚持服药 ≥ 24 周」的耐受者（tolerator）主层，取决于他「假如被分到安慰剂组」时的潜在行为——这在现实中无法直接观测，一般需要专门的设计（如随机撤药设计）或不可检验的统计假设来识别。</p>
+  <p><strong>与 MMRM 的关系</strong>：实现难度最大。要特别警惕：<strong>「用实际坚持者做个亚组分析」并不等于主层分析</strong>——坚持与否与预后相关，直接按实际行为分层会引入选择偏差。因此主层策略较少作为主要估计目标的实现方式，更多出现在方法学讨论或特殊设计中；若确需使用，应与统计师充分讨论识别假设。</p>
+
+  <h3>11.5 一张表：策略 → 数据 → 分析</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>策略</th><th>ICE 后的观测数据</th><th>典型实现（连续终点）</th><th>问题的性质</th></tr></thead>
+    <tbody>
+    <tr><td><strong>治疗策略</strong></td><td>全部纳入</td><td><strong>MMRM（全部观测数据，MAR）</strong>；停药后缺失可配参考填补作敏感性分析</td><td>实效 effectiveness</td></tr>
+    <tr><td><strong>假想策略</strong></td><td>排除 ICE 后的观测</td><td>截断（补救前）数据集上的 MMRM；或假想情景下的多重填补</td><td>假想情景下的 efficacy</td></tr>
+    <tr><td><strong>复合变量策略</strong></td><td>并入变量定义</td><td>变量重构后改用 logistic / 生存分析 / CMH 等</td><td>综合价值（疗效+耐受）</td></tr>
+    <tr><td><strong>在治策略</strong></td><td>只用停药前的观测</td><td>截断于停药时点的 MMRM</td><td>用药期间效应</td></tr>
+    <tr><td><strong>主层策略</strong></td><td>限定在主层内</td><td>主层识别（设计/假设）+ 层内 MMRM 或 ANCOVA</td><td>特定潜在子集的效应</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>11.6 敏感性分析：E9(R1) 的另一半</h3>
+  <p>E9(R1) 的标题是「estimands <strong>and sensitivity analysis</strong>」——估计目标与敏感性分析是一体两面：</p>
+  <ul>
+    <li>任何主分析都依赖<strong>不可检验的假设</strong>：治疗策略下的 MMRM 依赖 MAR；主层策略依赖主层可识别假设；等等；</li>
+    <li>敏感性分析通过<strong>有意地改变这些假设</strong>（如把 MAR 换成 MNAR 的参考填补、给填补值加 delta 偏移）来检验结论的稳健性；</li>
+    <li>常用工具：jump-to-reference / copy-reference 等参考填补、模式混合模型、临界点分析（tipping point）——正是第 7.3 节列出的那一批方法，现在你知道它们在框架里的位置了。</li>
+  </ul>
+  <div class="tip"><span class="lbl">把第 7 节与本节串成一条因果链</span>
+    <strong>ICE 的发生 → 造成数据缺失或改变数据含义 → 估计目标的 ICE 策略决定用哪些数据、缺失怎么解释 → 主分析（如治疗策略 + MAR 下的 MMRM）与敏感性分析（如参考填补、临界点）成对呈现</strong>。这正是 SAP 中「估计目标 → 主分析 → 敏感性分析」三段式结构的由来，也是监管审评的标准检查路径。
+  </div>
+
+  <h3>11.7 对统计程序员的实际影响</h3>
+  <ul>
+    <li><strong>SAP 的写作顺序变了</strong>：先写估计目标（五属性、逐个 ICE 指定策略），再写主分析与敏感性分析——模型不再是 SAP 的起点，而是估计目标的实现；</li>
+    <li><strong>分析数据集的构建取决于策略</strong>：同一试验，「治疗策略 MMRM」与「假想策略 MMRM」用的是两套不同的数据集——后者需要基于 ICE 日期（停药日、补救开始日）把之后的访视 flag 掉。ADaM 中通常通过 ANLxxFL 之类的分析 flag 或参数重定义实现；</li>
+    <li><strong>ICE 的采集质量决定一切</strong>：停药原因与日期、补救用药起止时间必须准确进入 SDTM（EX / CM / DS 等域）与 ADaM，否则截断与 flag 无从谈起——这会直接影响 CRF 设计与数据管理端的 query 管理；</li>
+    <li><strong>同一研究可以报告多个估计目标</strong>：例如主估计目标用治疗策略（实效问题）、关键次要估计目标用假想策略（无补救的药物效应）——同一个 MMRM 程序框架跑两套数据集即可，但每套都必须有独立的双程序 QC；</li>
+    <li><strong>落地参考</strong>：PHUSE / CDISC 白皮书《Implementation of ICH E9(R1) Estimands Framework Using Data Standards》给出了用 CDISC 数据标准承载估计目标框架的具体建议（见参考文献）。</li>
+  </ul>
+</section>
+
+<!-- ===================== 12 ===================== -->
+<section class="sec" id="s12">
+  <div class="sec-head">
+    <span class="sec-ghost">12</span>
+    <div class="sec-title">
+      <h2>监管视角（FDA / EMA / ICH E9(R1)）</h2>
+      <div class="sec-meta"><span class="chip">应用篇</span><span class="chip-read"></span></div>
+    </div>
+  </div>
+  <ul>
+    <li><strong>Mallinckrodt 等（2008）</strong>：奠定「MMRM 作为纵向连续终点主分析」的方法学基础，明确 MAR 假设与 UN 协方差。</li>
+    <li><strong>NRC 2010 报告</strong>：FDA 委托国家科学院撰写，系统否定 LOCF，主张「预防缺失 + 明确假设的统计方法 + 敏感性分析」三位一体。</li>
+    <li><strong>EMA 2010 指南</strong>：《Guideline on missing data in confirmatory clinical trials》，推荐在 MAR 下用基于似然的方法（MMRM），并要求评估缺失机制与敏感性分析。</li>
+    <li><strong>ICH E9(R1)（2019）</strong>：estimands 框架下，需先明确估计目标（estimand）与伴发事件（intercurrent events，如停药）的处理策略，再据此选择主分析与敏感性分析。MMRM 常服务于「治疗策略」估计目标（估计目标的完整框架与五种策略详见第 11 节）。</li>
+  </ul>
+  <div class="warn"><span class="lbl">对统计程序员的意义</span>
+    在 SAP 里，MMRM 的模型公式、协方差结构、缺失数据假设、自由度方法（KR）、基线协变量、亚组/敏感性分析都必须<strong>清晰、预先、可复现</strong>地规定。Häckl &amp; Koch（2023）特别指出：<strong>模型设定含糊（如协方差结构、交互项、访视编码不明确）会导致 I 类错误膨胀</strong>——这也是为什么规范的程序与双程序 QC 至关重要。
+  </div>
+</section>
+
+<!-- ===================== 13 ===================== -->
+<section class="sec" id="s13">
+  <div class="sec-head">
+    <span class="sec-ghost">13</span>
+    <div class="sec-title">
+      <h2>软件实现（SAS PROC MIXED / R mmrm）</h2>
+      <div class="sec-meta"><span class="chip">应用篇</span><span class="chip-read"></span></div>
+    </div>
+  </div>
+  <h3>13.1 SAS：PROC MIXED</h3>
+  <div class="codeblock">
+    <div class="code-head"><span class="lang">SAS</span><button class="copy-btn" type="button">复制</button></div>
+    <pre><code>* ===== MMRM：相对基线的变化值，UN 协方差，Kenward-Roger ===== ;
+proc mixed data=adeff method=reml;
+     class usubjid trt avisit;
+     model chg = base trt avisit trt*avisit / ddfm=kr solution;
+     repeated avisit / subject=usubjid type=un rcorr;
+     lsmeans trt*avisit / cl diff e;
+     estimate 'TRT vs PBO at Week 24'
+              trt 1 -1 trt*avisit 0 0 0 1 0 0 0 -1 / cl;
+run;</code></pre>
+  </div>
+  <p>逐行解读：</p>
+  <ul>
+    <li><code>method=reml</code>：用 REML 估计协方差参数（MMRM 标准做法）；</li>
+    <li><code>class</code>：分类变量；<code>usubjid</code> 用于标识受试者；</li>
+    <li><code>model chg = base trt avisit trt*avisit</code>：固定效应 = 基线 + 治疗 + 访视 + 治疗×访视；</li>
+    <li><code>ddfm=kr</code>：Kenward–Roger 自由度（关键！）；</li>
+    <li><code>repeated avisit / subject=usubjid type=un</code>：<strong>这是 MMRM 的灵魂</strong>——在受试者内部（subject）对重复的 avisit 建模 UN 协方差；</li>
+    <li><code>rcorr</code>：输出相关系数矩阵，便于检查相关结构；</li>
+    <li><code>lsmeans trt*avisit / diff</code>：每个治疗×访视组合的 LS-means 及其两两差异；</li>
+    <li><code>estimate</code>：提取特定访视（如 Week 24）的治疗差异。</li>
+  </ul>
+
+  <h3>13.2 R：mmrm 包（pharmaverse / openpharma）</h3>
+  <div class="codeblock">
+    <div class="code-head"><span class="lang">R</span><button class="copy-btn" type="button">复制</button></div>
+    <pre><code>library(mmrm)
+library(emmeans)
+
+# us(unstructured = ...) 指定 UN 协方差结构；mmrm 默认 REML
+fit &lt;- mmrm(
+     formula = chg ~ base + trt * avisit + us(avisit | usubjid),
+     data    = adeff
+)
+
+summary(fit)
+
+# 每个访视下的治疗 LS-means 与差异
+emmeans(fit, ~ trt | avisit)
+pairs(emmeans(fit, ~ trt | avisit))</code></pre>
+  </div>
+  <p>要点：</p>
+  <ul>
+    <li><code>us(avisit | usubjid)</code>：对每个受试者内部的 avisit 建模 UN 协方差（对应 SAS 的 <code>REPEATED / TYPE=UN</code>）；</li>
+    <li><code>mmrm</code> 包是<strong>专门为 MMRM 设计</strong>的高性能实现，默认使用 REML（<code>reml = TRUE</code>）；自由度方法用 <code>mmrm_control(method=...)</code> 指定（支持 Satterthwaite、Kenward–Roger 等，监管场景建议显式选 Kenward–Roger），比通用 <code>lme4</code>（不直接支持 UN）更贴合监管需求；</li>
+    <li>其他结构：<code>cs()</code>、<code>ar1()</code>、<code>toep()</code> 等，用法一致。</li>
+  </ul>
+
+  <h3>13.3 协方差结构代码对照</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>结构</th><th>SAS <code>type=</code></th><th>R <code>mmrm</code> 协方差项</th></tr></thead>
+    <tbody>
+    <tr><td>UN</td><td><code>un</code></td><td><code>us(...)</code></td></tr>
+    <tr><td>AR(1)</td><td><code>ar(1)</code></td><td><code>ar1(...)</code></td></tr>
+    <tr><td>ARH(1)</td><td><code>arh(1)</code></td><td><code>ar1h(...)</code></td></tr>
+    <tr><td>CS</td><td><code>cs</code></td><td><code>cs(...)</code></td></tr>
+    <tr><td>CSH</td><td><code>csh</code></td><td><code>csh(...)</code></td></tr>
+    <tr><td>Toeplitz</td><td><code>toep</code></td><td><code>toep(...)</code></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ===================== 14 ===================== -->
+<section class="sec" id="s14">
+  <div class="sec-head">
+    <span class="sec-ghost">14</span>
+    <div class="sec-title">
+      <h2>结果如何解读</h2>
+      <div class="sec-meta"><span class="chip">应用篇</span><span class="chip-read"></span></div>
+    </div>
+  </div>
+  <h3>14.1 看什么</h3>
+  <ul>
+    <li><strong>协方差参数 / 相关矩阵</strong>：确认估计出的 $\Sigma$ 正定（无负方差、无 |$\rho$|&gt;1）、结构合理；</li>
+    <li><strong>固定效应解（Solution for Fixed Effects）</strong>：各系数估计与 SE（注意：主分析结论应基于 LS-means 对比而非单看系数）；</li>
+    <li><strong>Type III 检验</strong>：治疗×访视交互是否显著（判断「效应是否随访视变化」）；</li>
+    <li><strong>LS-means 及差异</strong>：每个访视的治疗差异、95% CI、p 值——这是结果报告的核心；</li>
+    <li><strong>模型拟合信息</strong>：-2 Res Log Likelihood、AIC/BIC（用于结构比较）。</li>
+  </ul>
+
+  <h3>14.2 常见报告口径</h3>
+  <ul>
+    <li>每个治疗组、每个访视的 LS-mean（及其 SE）；</li>
+    <li>治疗差异（TRT − PBO）+ 95% CI + p 值（通常主分析关注<strong>主要终点访视</strong>，如 Week 24）；</li>
+    <li>有时附「整体治疗效应」（跨访视平均）作为次要呈现。</li>
+  </ul>
+
+  <h3>14.3 诊断信号</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>信号</th><th>含义 / 处理</th></tr></thead>
+    <tbody>
+    <tr><td>协方差矩阵非正定 / 负方差</td><td>模型退化或结构过复杂，改用 ARH(1)/CSH/TOEPH 或删减参数</td></tr>
+    <tr><td>不收敛</td><td>增大迭代、换初值、简化结构、检查数据/访视编码</td></tr>
+    <tr><td>G 矩阵/Hessian 报错</td><td>常与「方差成分被估到边界（0）」相关，需诊断</td></tr>
+    <tr><td>交互显著</td><td>治疗效应随访视变化，应分访视报告，而非只报一个总体差异</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ===================== 15 ===================== -->
+<section class="sec" id="s15">
+  <div class="sec-head">
+    <span class="sec-ghost">15</span>
+    <div class="sec-title">
+      <h2>常见误区与陷阱</h2>
+      <div class="sec-meta"><span class="chip gold">避坑</span><span class="chip-read"></span></div>
+    </div>
+  </div>
+  <ol>
+    <li><strong>误区：MMRM = 随机截距模型。</strong> 随机截距只能得到 CS 结构；经典 MMRM 用 R-side 的 UN 等更一般结构，二者不等价。</li>
+    <li><strong>误区：默认用 CS 或 AR(1)，不比较结构。</strong> 若真实相关不满足假设，结论可能失真；UN 通常是更稳妥的默认（访视数不多时）。</li>
+    <li><strong>误区：忘了指定 <code>ddfm=kr</code> / Kenward–Roger。</strong> 小样本下自由度近似不当会扭曲 p 值，I 类错误可能膨胀。</li>
+    <li><strong>误区：用 ML 而非 REML 估计方差成分。</strong> ML 会低估方差成分，MMRM 应用 REML。</li>
+    <li><strong>误区：把「MAR」理解成「缺失是随机的」。</strong> MAR 允许缺失依赖已观测信息，只要求与「未观测值本身」无关，二者区别关键。</li>
+    <li><strong>误区：忽略收敛/正定问题直接报结果。</strong> 非正定、不收敛、负方差都意味着模型无效，必须诊断处理。</li>
+    <li><strong>误区：访视数很多时坚持 UN。</strong> 参数 $\dfrac{T(T+1)}{2}$ 爆炸，易不收敛；此时考虑 ARH(1)/TOEPH 或降维方法。</li>
+    <li><strong>误区：模型设定含糊、未预先在 SAP 规定。</strong> Häckl &amp; Koch（2023）证明模型设定含糊/不完整会导致 I 类错误膨胀——协方差结构、交互项、访视编码都要在 SAP 中锁定。</li>
+    <li><strong>误区：混淆「分析数据集」与「填补」。</strong> MMRM 用观测数据 + 似然推断，不需要、也不应做 LOCF 预填补；ADaM 里每个访视一行、缺失访视不生成记录（或按分析需要处理）即可。</li>
+    <li><strong>误区：把 SUBJECT= 与 REPEATED 写反。</strong> 如 <code>REPEATED USUBJID / SUBJECT=AVISITN</code>——这会把「同一访视下的受试者记录」聚成相关性单位，完全改变模型含义（甚至构造异常庞大的协方差问题）。正确方向是「访视在 REPEATED、受试者在 SUBJECT」。</li>
+    <li><strong>误区：协方差结构不收敛，就删掉治疗×访视交互项。</strong> 固定效应（均值模型）与协方差结构是两个层面；为了让程序跑通而删除研究问题中的交互项，属于篡改模型，结论无效。</li>
+    <li><strong>误区：只比较 AIC，不看参数与结果稳定性。</strong> 复杂结构可能改善拟合指标，却产生不稳定的协方差参数和不可解释的推断结果；AIC 只是选择依据之一。</li>
+  </ol>
+</section>
+
+<!-- ===================== 16 ===================== -->
+<section class="sec" id="s16">
+  <div class="sec-head">
+    <span class="sec-ghost">16</span>
+    <div class="sec-title">
+      <h2>参考文献</h2>
+      <div class="sec-meta"><span class="chip">参考</span><span class="chip-read"></span></div>
+    </div>
+  </div>
+  <h3>监管与指南</h3>
+  <ol>
+    <li>Mallinckrodt CH, Lane PW, Schnell D, Peng Y, Mancuso JP. <em>Recommendations for the Primary Analysis of Continuous Endpoints in Longitudinal Clinical Trials.</em> Drug Information Journal. 2008;42(4):303–319. doi:10.1177/009286150804200402.（MMRM 取代 LOCF 的里程碑论文）</li>
+    <li>National Research Council (Panel on Handling Missing Data in Clinical Trials). <em>The Prevention and Treatment of Missing Data in Clinical Trials.</em> Washington, DC: The National Academies Press; 2010. <a href="https://www.ncbi.nlm.nih.gov/books/NBK209893/">NCBI 摘要</a></li>
+    <li>European Medicines Agency. <em>Guideline on missing data in confirmatory clinical trials.</em> CHMP/EWP/1776/99 Rev. 1; 2010.</li>
+    <li>ICH. <em>E9(R1) Addendum on estimands and sensitivity analysis in clinical trials to the guideline on statistical principles for clinical trials.</em> 2019.</li>
+    <li>ICH. <em>E9 Statistical Principles for Clinical Trials.</em> 1998.</li>
+  </ol>
+  <h3>统计方法</h3>
+  <ol start="6">
+    <li>Kenward MG, Roger JH. <em>Small sample inference for fixed effects from restricted maximum likelihood.</em> Biometrics. 1997;53(3):983–997.（KR 自由度方法）</li>
+    <li>Siddiqui O, Hung HMJ, O'Neill R. <em>MMRM vs. LOCF: A comprehensive comparison based on simulation study and 25 NDA datasets.</em> J Biopharm Stat. 2009;19(2):227–246. <a href="https://pubmed.ncbi.nlm.nih.gov/19212876/">PubMed</a></li>
+    <li>Mallinckrodt CH, Clark WS, David SR. <em>Accounting for dropout bias using mixed-effects models.</em> J Biopharm Stat. 2001;11(1-2):9–21. <a href="https://pubmed.ncbi.nlm.nih.gov/11459446/">PubMed</a></li>
+    <li>Lane P. <em>Handling drop-out in longitudinal clinical trials: a comparison of the LOCF and MMRM approaches.</em> Pharm Stat. 2008;7(2):93–106. <a href="https://pubmed.ncbi.nlm.nih.gov/17351897/">PubMed</a></li>
+    <li>Häckl S, Koch A. <em>Type-I-error rate inflation in mixed models for repeated measures caused by ambiguous or incomplete model specifications.</em> Pharmaceutical Statistics. 2023;22(6). doi:10.1002/pst.2328. <a href="https://pubmed.ncbi.nlm.nih.gov/37519010/">PubMed: 37519010</a></li>
+    <li>Frangakis CE, Rubin DB. <em>Principal stratification in causal inference.</em> Biometrics. 2002;58(1):21–29.（主层策略的理论基础——主分层）</li>
+  </ol>
+  <h3>社区 / 行业资源（PharmaSUG · PHUSE · pharmaverse）</h3>
+  <ol start="12">
+    <li>PharmaSUG 2015, Paper SP02. <em>The Most Commonly Used Methods for Finding Appropriate Covariance Structure.</em> <a href="https://pharmasug.org/proceedings/2015/SP/PharmaSUG-2015-SP02.pdf">PDF</a>（协方差结构选择）</li>
+    <li>PHUSE. <em>Clinical Statistical Reporting in a Multilingual World — Mixed Models</em> 章节. <a href="https://phuse-org.github.io/CSRMLW_bookdown/mixed-models.html">链接</a></li>
+    <li>PHUSE US 2021, Paper AS09. <em>Confused with PROC MIXED.</em> <a href="https://www.lexjansen.com/phuse-us/2021/as/PAP_AS09.pdf">PDF</a></li>
+    <li>PHUSE / CDISC. <em>Implementation of ICH E9(R1) Estimands Framework Using Data Standards</em>（白皮书）.</li>
+    <li>openpharma / pharmaverse. <em>mmrm: Mixed Models for Repeated Measures</em>（R 包文档）. <a href="https://openpharma.github.io/mmrm/">文档</a> · <a href="https://pharmaverse.r-universe.dev/mmrm/doc/kenward.html">Kenward–Roger 说明</a></li>
+    <li>SAS Institute. <em>PROC MIXED Documentation</em>（REPEATED / TYPE= / DDFM= / SP(POW) / GROUP= 选项）. <a href="https://go.documentation.sas.com/doc/en/statug/latest/statug_mixed_toc.htm">链接</a></li>
+    <li>微信公众号「统计编程与 AI 实践」. <em>TYPE=UN 不是标准答案：统计程序员如何理解 MMRM 的协方差结构</em>. <a href="https://mp.weixin.qq.com/s/EZDuB366Ho-Cl7r0W-tuCQ">原文链接</a>（本次学习的主要线索，已通读并融入）</li>
+  </ol>
+  <div class="muted">说明：以上文献均通过检索核实存在；微信原文由用户保存为本地 HTML 后已通读融入。本指南的事实与结论依据权威方法学文献，原文作为学习线索，其技术观点与 SAS 文档及方法学文献一致。</div>
+</section>
+
+<!-- ===================== 17 ===================== -->
+<section class="sec" id="s17">
+  <div class="sec-head">
+    <span class="sec-ghost">17</span>
+    <div class="sec-title">
+      <h2>一页速查表</h2>
+      <div class="sec-meta"><span class="chip gold">速查</span><span class="chip-read"></span></div>
+    </div>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>问题</th><th>答案</th></tr></thead>
+    <tbody>
+    <tr><td>MMRM 全称</td><td>Mixed Model for Repeated Measures（重复测量的混合效应模型）</td></tr>
+    <tr><td>解决什么问题</td><td>纵向连续终点的组内相关 + 缺失数据 + 效应随时间变化</td></tr>
+    <tr><td>模型方程</td><td>$\Delta Y = \mu + \tau_g + \beta_1B + \gamma_j + (\tau\gamma)_{gj} + \varepsilon_{ij}$</td></tr>
+    <tr><td>「混合」指什么</td><td>固定效应（均值结构）+ 残差协方差结构（R-side，非随机截距）</td></tr>
+    <tr><td>核心矩阵</td><td>组内协方差矩阵 $\Sigma$，必须正定（特征值全&gt;0）</td></tr>
+    <tr><td>默认协方差结构</td><td>UN（无结构，方法学默认出发点，<strong>非「标准答案」</strong>），参数 $\dfrac{T(T+1)}{2}$ 个</td></tr>
+    <tr><td>缺失数据假设</td><td>MAR（随机缺失）</td></tr>
+    <tr><td>估计方法</td><td>REML 估协方差 + GLS 估固定效应</td></tr>
+    <tr><td>自由度方法</td><td>Kenward–Roger（KR）</td></tr>
+    <tr><td>SAS 关键词</td><td><code>proc mixed</code> + <code>repeated / type=un</code> + <code>ddfm=kr</code></td></tr>
+    <tr><td>R 实现</td><td><code>mmrm::mmrm()</code>（pharmaverse，默认 REML；KR 用 <code>mmrm_control(method=...)</code> 指定）</td></tr>
+    <tr><td>取代了谁</td><td>LOCF（末次观测结转）</td></tr>
+    <tr><td>结果报告什么</td><td>各访视 LS-means、治疗差异 + 95% CI + p 值</td></tr>
+    <tr><td>MNAR 怎么办</td><td>敏感性分析：参考填补、模式混合、选择模型、临界点分析</td></tr>
+    <tr><td>与估计目标的关系</td><td>MMRM 是「治疗策略」估计目标的典型主分析；ICE 处理策略决定纳入哪些观测（详见第 11 节）</td></tr>
+    </tbody>
+  </table></div>
+  <div class="key"><span class="lbl">记住这一句</span>
+    MMRM = 「均值模型（治疗×访视 + 基线）＋ 组内协方差矩阵 $\Sigma$ ＋ REML 估计 ＋ Kenward–Roger 自由度」，在 MAR 假设下，用全部观测数据做纵向连续终点的高效、无偏主分析。
+  </div>
+</section>
+
+<footer class="foot">
+  MMRM 深入理解指南 · 供个人学习研究使用<br>
+  公式由 MathJax 渲染（需联网加载 CDN） · 本页所有数值均为教学示例，不代表任何真实研究结果
+</footer>
+
+<nav class="pager" id="pager"></nav>
+
+</div>
+</main>
+</div>
+
+<button class="fab-top" id="fabTop" title="回到顶部">↑</button>
+
+<script>
+document.documentElement.classList.add('js');
+
+/* ---- 轻量语法高亮（SAS / R） ---- */
+(function () {
+  var KW = { proc:1, class:1, model:1, repeated:1, lsmeans:1, estimate:1, run:1,
+             data:1, method:1, type:1, subject:1, group:1, ddfm:1, rcorr:1,
+             solution:1, cl:1, diff:1, e:1, library:1, mmrm:1, summary:1,
+             emmeans:1, pairs:1, us:1, cs:1, ar1:1, toep:1, csh:1, ar1h:1,
+             fit:1, formula:1 };
+  function escH(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function plainH(s) {
+    return escH(s)
+      .replace(/[A-Za-z_][A-Za-z0-9_.]*/g, function (w) {
+        return KW[w.toLowerCase()] ? '<span class="tok-kw">' + w + '</span>' : w;
+      })
+      .replace(/(^|[^\w."'&])(\d+(?:\.\d+)?)(?![\w])/g, '$1<span class="tok-num">$2</span>');
+  }
+  function highlightLine(line) {
+    var m = line.match(/^(\s*)(\*[^;]*;.*)$/);
+    if (m) return escH(m[1]) + '<span class="tok-cmt">' + escH(m[2]) + '</span>';
+    var hi = line.indexOf('#');
+    if (hi >= 0 && line.indexOf("'") === -1 && line.indexOf('"') === -1) {
+      return plainH(line.slice(0, hi)) + '<span class="tok-cmt">' + escH(line.slice(hi)) + '</span>';
+    }
+    return line.split(/('[^']*'|"[^"]*")/g).map(function (p, i) {
+      return i % 2 === 1 ? '<span class="tok-str">' + escH(p) + '</span>' : plainH(p);
+    }).join('');
+  }
+  document.querySelectorAll('.codeblock code').forEach(function (c) {
+    c.innerHTML = c.textContent.split('\n').map(highlightLine).join('\n');
+  });
+})();
+
+(function () {
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section.sec'));
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc-link'));
+  var sidebar = document.getElementById('sidebar');
+  var toc = document.getElementById('toc');
+  var progressFill = document.getElementById('progressFill');
+  var sbFill = document.getElementById('sbFill');
+  var pctText = document.getElementById('pctText');
+  var fabTop = document.getElementById('fabTop');
+  var menuBtn = document.getElementById('menuBtn');
+  var sbMask = document.getElementById('sbMask');
+  var raf = false;
+
+  /* ---- 每节阅读时长估算 ---- */
+  sections.forEach(function (s) {
+    var len = s.textContent.replace(/\s+/g, '').length;
+    var min = Math.max(1, Math.round(len / 500));
+    var slot = s.querySelector('.chip-read');
+    if (slot) slot.textContent = '约 ' + min + ' 分钟读完';
+  });
+
+  /* ---- 滚动监听：目录高亮 + 进度条 ---- */
+  function onScroll() {
+    if (raf) return;
+    raf = true;
+    requestAnimationFrame(function () {
+      raf = false;
+      var pos = window.scrollY + window.innerHeight * 0.28;
+      var current = sections[0];
+      for (var i = 0; i < sections.length; i++) {
+        if (sections[i].offsetTop <= pos) current = sections[i];
+      }
+      links.forEach(function (l) {
+        l.classList.toggle('active', l.getAttribute('href') === '#' + current.id);
+      });
+      var active = toc.querySelector('.toc-link.active');
+      if (active) {
+        var r = active.getBoundingClientRect();
+        var sr = toc.getBoundingClientRect();
+        if (r.top < sr.top || r.bottom > sr.bottom) {
+          active.scrollIntoView({ block: 'nearest' });
+        }
+      }
+      var doc = document.documentElement;
+      var max = doc.scrollHeight - window.innerHeight;
+      var p = max > 0 ? Math.min(1, window.scrollY / max) : 0;
+      progressFill.style.width = (p * 100).toFixed(1) + '%';
+      if (sbFill) sbFill.style.width = (p * 100).toFixed(1) + '%';
+      if (pctText) pctText.textContent = Math.round(p * 100) + '%';
+      fabTop.classList.toggle('show', window.scrollY > 600);
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  onScroll();
+
+  /* ---- 入场动画 ---- */
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+      });
+    }, { rootMargin: '0px 0px -60px 0px' });
+    sections.forEach(function (s) { io.observe(s); });
+  } else {
+    sections.forEach(function (s) { s.classList.add('visible'); });
+  }
+
+  /* ---- 移动端目录开关 ---- */
+  function toggleSb(force) {
+    var open = typeof force === 'boolean' ? force : !sidebar.classList.contains('open');
+    sidebar.classList.toggle('open', open);
+    sbMask.classList.toggle('show', open);
+  }
+  if (menuBtn) menuBtn.addEventListener('click', function () { toggleSb(); });
+  if (sbMask) sbMask.addEventListener('click', function () { toggleSb(false); });
+  links.forEach(function (l) {
+    l.addEventListener('click', function () {
+      if (window.innerWidth <= 1180) toggleSb(false);
+    });
+  });
+
+  /* ---- 回到顶部 ---- */
+  if (fabTop) fabTop.addEventListener('click', function () {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  /* ---- 上一节 / 下一节（跟随滚动位置更新） ---- */
+  var pager = document.getElementById('pager');
+  if (pager && sections.length) {
+    function updatePager() {
+      var pos = window.scrollY + window.innerHeight * 0.5;
+      var cur = 0;
+      sections.forEach(function (s, i) { if (s.offsetTop <= pos) cur = i; });
+      pager.innerHTML = '';
+      if (cur > 0) {
+        var p = sections[cur - 1];
+        var a1 = document.createElement('a');
+        a1.href = '#' + p.id;
+        a1.innerHTML = '<span class="dir">← 上一节</span><span class="pt">' + ('0' + (cur - 1)).slice(-2) + ' · ' + p.querySelector('h2').textContent + '</span>';
+        pager.appendChild(a1);
+      } else {
+        var sp = document.createElement('span');
+        pager.appendChild(sp);
+      }
+      if (cur < sections.length - 1) {
+        var n = sections[cur + 1];
+        var a2 = document.createElement('a');
+        a2.href = '#' + n.id;
+        a2.className = 'next';
+        a2.innerHTML = '<span class="dir">下一节 →</span><span class="pt">' + ('0' + (cur + 1)).slice(-2) + ' · ' + n.querySelector('h2').textContent + '</span>';
+        pager.appendChild(a2);
+      }
+    }
+    window.addEventListener('scroll', updatePager, { passive: true });
+    updatePager();
+  }
+
+  /* ---- 代码复制 ---- */
+  document.querySelectorAll('.copy-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var code = btn.closest('.codeblock').querySelector('code');
+      var text = code.innerText;
+      function done() { btn.textContent = '已复制'; setTimeout(function () { btn.textContent = '复制'; }, 1600); }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () { fallbackCopy(text); done(); });
+      } else {
+        fallbackCopy(text); done();
+      }
+    });
+  });
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  /* ---- MathJax 渲染完成后重新校准进度 ---- */
+  window.addEventListener('load', function () {
+    if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
+      window.MathJax.startup.promise.then(function () { onScroll(); });
+    }
+  });
+})();
+</script>
+</body>
+</html>
+

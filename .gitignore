@@ -1,0 +1,9 @@
+# 临时文件
+_part*.html
+*.log
+.DS_Store
+Thumbs.db
+
+# 原始微信文章（仅保留改版后的指南）
+TYPE=UN*
+article_text.txt
