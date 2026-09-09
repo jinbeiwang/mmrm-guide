@@ -50,13 +50,13 @@ window.MathJax = {
   --border: #e2e8f0;
   --border-strong: #cbd5e1;
 
-  /* Code — cool dark */
-  --code-bg: #0f172a;
+  /* Code — distinct from primary */
+  --code-bg: #1e293b;
   --code-ink: #e2e8f0;
-  --code-kw: #7dd3fc;
+  --code-kw: #93c5fd;
   --code-str: #86efac;
-  --code-cmt: #64748b;
-  --code-num: #fbbf24;
+  --code-cmt: #94a3b8;
+  --code-num: #fcd34d;
 
   /* Layout */
   --sidebar-w: 290px;
@@ -100,7 +100,9 @@ h4 { font-size: 17px; font-weight: 600; margin-bottom: 10px; }
 p { margin-bottom: 18px; }
 a { color: var(--accent); text-decoration: none; transition: color .2s; }
 a:hover { color: var(--accent-light); }
-code, kbd { font-family: var(--font-mono); font-size: 0.85em; background: var(--surface-alt); padding: 2px 6px; border-radius: 4px; }
+code, kbd { font-family: var(--font-mono); font-size: 0.85em; background: var(--surface-alt); padding: 2px 6px; border-radius: 4px; color: var(--ink); }
+/* Inside dark code blocks: remove light bg, keep inherited light text */
+.codeblock code, .codeblock kbd { background: transparent; padding: 0; color: inherit; }
 ::selection { background: var(--accent-soft); color: var(--primary); }
 
 /* ============ TOP HEADER BAR ============ */
