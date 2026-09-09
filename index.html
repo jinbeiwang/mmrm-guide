@@ -496,7 +496,8 @@ window.MathJax = {
     section.sec { break-inside: avoid-page; box-shadow: none; }
     .hero { box-shadow: none; }
   }
-</style>
+  </style>
+  <link rel="stylesheet" href="interactive.css">
 </head>
 <body>
 <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
@@ -718,6 +719,26 @@ window.MathJax = {
   \begin{pmatrix} a x_1 + b x_2 \\ c x_1 + d x_2 \end{pmatrix}
   $$</div>
   <p>规则记忆：$A$ 的列数必须等于 $B$ 的行数，结果的行数取 $A$ 的行数、列数取 $B$ 的列数。<strong>顺序很重要</strong>：一般 $AB \ne BA$。</p>
+
+  <div class="mat-mult-demo">
+    <h4>动画演示：矩阵乘法逐格计算</h4>
+    <div class="mat-row">
+      <div class="mat-grid mat-a"></div>
+      <div class="mat-op">×</div>
+      <div class="mat-grid mat-b"></div>
+      <div class="mat-op">=</div>
+      <div class="mat-grid mat-c"></div>
+    </div>
+    <div class="mat-ctrls">
+      <button class="mat-btn mat-play" type="button">▶ 开始演示</button>
+      <button class="mat-btn mat-reset" type="button">↺ 重置</button>
+      <span class="mat-step-info">点击"开始"观看乘法过程</span>
+    </div>
+    <p style="font-size:12px;color:#4a6078;margin:10px 0 0;line-height:1.6;">
+      💡 <strong>行 × 列 = 点积</strong>：橙色行从上到下移动，蓝色列从左到右移动，每对行列对应一个结果格。观察：2×3 矩阵 × 3×2 矩阵 = 2×2 矩阵。
+    </p>
+  </div>
+
   <p><strong>为什么这样定义？</strong> 因为矩阵乘法就是「<strong>线性变换</strong>」的组合。看一个最有用的事实：</p>
   <div class="math-block">$$
   \underbrace{\begin{pmatrix} a & b \\ c & d \end{pmatrix}}_{A}
@@ -1009,6 +1030,42 @@ window.MathJax = {
   </div>
   <p>协方差结构决定了「$\Sigma$ 长什么样」。以 $T=3$ 个访视为例，把每种结构写出来（参数是待估计的）。</p>
 
+  <div class="cov-demo">
+    <h4>互动演示：协方差结构对比器</h4>
+    <div class="cov-controls">
+      <div class="cov-ctrl">
+        <label>结构类型</label>
+        <select class="cov-type">
+          <option value="UN">UN（无结构）</option>
+          <option value="CS">CS（复合对称）</option>
+          <option value="AR1">AR(1)（一阶自回归）</option>
+          <option value="TOEP">TOEP（Toeplitz）</option>
+        </select>
+      </div>
+      <div class="cov-ctrl">
+        <label>访视数 T：<span class="cov-t-val">5</span></label>
+        <input type="range" class="cov-t-slider" min="3" max="8" value="5" step="1">
+      </div>
+      <div class="cov-ctrl">
+        <label>相关系数 ρ：<span class="cov-rho-val">0.60</span></label>
+        <input type="range" class="cov-rho-slider" min="0.1" max="0.95" value="0.6" step="0.05">
+      </div>
+    </div>
+    <div class="cov-vis-wrap">
+      <div class="cov-matrix" title="颜色越红相关性越强，越蓝越弱"></div>
+      <div class="cov-info">
+        <div class="cov-stat"><span class="k">参数个数</span><span class="v cov-params">-</span></div>
+        <div class="cov-stat"><span class="k">结构特点</span><span class="v cov-pattern" style="font-size:12px;font-weight:500;color:#5a6a7c;"></span></div>
+        <div style="font-size:11.5px;color:#8a7a5c;line-height:1.6;margin-top:4px;">
+          💡 试试切换不同结构，观察矩阵"图案"的变化：<br>
+          · UN 每格颜色都不一样<br>
+          · CS 所有非对角格颜色相同<br>
+          · AR(1) 离对角线越远颜色越浅
+        </div>
+      </div>
+    </div>
+  </div>
+
   <h3>6.1 无结构 UN（unstructured）—— 默认首选</h3>
   <div class="math-block">$$
   \Sigma_{UN} = \begin{pmatrix}
@@ -1088,6 +1145,21 @@ window.MathJax = {
     <tr><td>TOEP / TOEPH</td><td>$T$ / $2T-1$</td><td>相关仅取决于间隔步数</td></tr>
     </tbody>
   </table></div>
+
+  <div class="param-curve-demo">
+    <h4>互动演示：各结构参数数量随访视数增长</h4>
+    <div class="param-chart"><svg></svg></div>
+    <div class="param-legend">
+      <div class="item"><span class="sw" style="background:#c0392b"></span>UN（二次增长，T=10 时 55 个）</div>
+      <div class="item"><span class="sw" style="background:#e67e22"></span>TOEP（线性增长）</div>
+      <div class="item"><span class="sw" style="background:#27ae60"></span>AR(1)（恒定 2 个参数）</div>
+      <div class="item"><span class="sw" style="background:#2980b9"></span>CS（恒定 2 个参数）</div>
+    </div>
+    <p style="font-size:12px;color:#6b5a3a;margin:10px 0 0;line-height:1.6;">
+      💡 <strong>为什么 UN 不总是最好</strong>：访视数越多，UN 要估计的参数爆炸式增长。T=10 时 UN 要估 55 个参数，而 AR(1) 只需 2 个。样本量小时 UN 容易不收敛或非正定，这就是为什么需要根据实际情况选择合适结构。
+    </p>
+  </div>
+
   <div class="note"><span class="lbl">实践共识</span>
     ① 访视数适中（如 4–6 个）时，<strong>UN 是方法学推荐默认</strong>（Mallinckrodt 等 2008）；② 用信息准则（AIC / BIC）<strong>辅助</strong>比较，BIC 倾向选更简洁的模型；③ 若 UN 不收敛或非正定，退到 ARH(1)/CSH/TOEPH 等；④ 协方差结构的选择<strong>应在方案或 SAP 中预先规定</strong>，避免数据驱动滥用。
   </div>
@@ -1147,6 +1219,24 @@ window.MathJax = {
     </tbody>
   </table></div>
   <p>MMRM 的<strong>核心假设是 MAR</strong>。注意 MAR 并不要求「缺失是随机的」，而是要求「缺失的原因可以被<strong>已观测到的信息</strong>解释」。</p>
+
+  <div class="missing-demo">
+    <h4>互动演示：三种缺失机制可视化</h4>
+    <div class="missing-controls">
+      <select class="missing-type">
+        <option value="MCAR">MCAR（完全随机缺失）</option>
+        <option value="MAR">MAR（随机缺失）</option>
+        <option value="MNAR">MNAR（非随机缺失）</option>
+      </select>
+      <button class="missing-regen" type="button">🎲 重新生成数据</button>
+    </div>
+    <div class="missing-chart"><svg></svg></div>
+    <div class="missing-legend">
+      <span><i style="background:#2d7a2d;"></i>观测值（绿色实心）</span>
+      <span><i style="border:2px solid #c0392b; background:none;"></i>缺失值（红色空心）</span>
+    </div>
+    <p class="missing-desc" style="font-size:12.5px;color:#8e3048;margin:10px 0 0;line-height:1.6;"></p>
+  </div>
 
   <h3>7.2 为什么 MMRM 在 MAR 下有效（直觉）</h3>
   <p>MMRM 基于<strong>似然（likelihood）</strong>，会用到每一个受试者的<strong>所有观测到的数据</strong>。当一个受试者脱落时，模型对他「缺失值本应是多少」的推断，来自两股信息：</p>
@@ -1830,6 +1920,7 @@ document.documentElement.classList.add('js');
   });
 })();
 </script>
+<script src="interactive.js"></script>
 </body>
 </html>
 
