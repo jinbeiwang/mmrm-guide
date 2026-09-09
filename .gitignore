@@ -7,3 +7,16 @@ Thumbs.db
 # 原始微信文章（仅保留改版后的指南）
 TYPE=UN*
 article_text.txt
+
+# 竞品截图（分析用，不部署）
+*.png
+
+# 备份文件
+*.bak
+
+# 开发工具
+.qoder/
+_temp_claude_code/
+
+# 参考文章归档（静态快照，不部署）
+reference/
