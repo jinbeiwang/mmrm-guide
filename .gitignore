@@ -20,3 +20,18 @@ _temp_claude_code/
 
 # 参考文章归档（静态快照，不部署）
 reference/
+
+# 项目源材料（含未脱敏标识，禁止提交/部署）
+studyxx/
+_sasout.txt
+_s20_21.html
+_s22_24.html
+
+# 自研引擎与调试产物
+mmrm_engine.py
+_engine_out.json
+_engine_report.txt
+_uifix/
+
+# 工作区元数据
+.workbuddy/

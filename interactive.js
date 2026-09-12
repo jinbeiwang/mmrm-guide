@@ -25,8 +25,17 @@
     AR1:  { name: 'AR(1)',            params: function() { return 2; }, desc: 'Correlation decays geometrically with lag' },
     TOEP: { name: 'Toeplitz',         params: function(t) { return t; }, desc: 'Same-lag covariances shared' },
     CSH:  { name: 'Heterogeneous CS', params: function(t) { return t+1; }, desc: 'Different variances, common covariance' },
-    ARH1: { name: 'Heterogeneous AR(1)', params: function(t) { return t+1; }, desc: 'Different variances, AR(1) correlation' }
+    ARH1: { name: 'Heterogeneous AR(1)', params: function(t) { return t+1; }, desc: 'Different variances, AR(1) correlation' },
+    SPPOW:{ name: 'Spatial Power',         params: function() { return 2; }, desc: 'rho^|t_i - t_j| on real visit times; handles unequal visit spacing' }
   };
+
+  // SP(POW) 的演示访视计划（周）；不等距是它与 AR(1) 的关键区别
+  var SPPOW_WEEK = [2, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44];
+
+  function sppowInfo(t) {
+    var wk = SPPOW_WEEK.slice(0, t);
+    return 'SP(POW)：示例访视周次 ' + wk.join('/') + '，相关 = ρ^(|tᵢ−tⱼ|/2)（以 2 周为 1 个时间单位）';
+  }
 
   function generateMatrix(type, t, rho) {
     var m = [];
@@ -44,6 +53,7 @@
             case 'TOEP': m[i][j] = +(rho * Math.pow(0.85, lag - 1)).toFixed(3); break;
             case 'CSH':  m[i][j] = +(rho * Math.sqrt((1 + 0.1*i) * (1 + 0.1*j))).toFixed(3); break;
             case 'ARH1': m[i][j] = +(Math.pow(rho, lag) * Math.sqrt((1+0.1*i)*(1+0.1*j))).toFixed(3); break;
+            case 'SPPOW': m[i][j] = +Math.pow(rho, Math.abs(SPPOW_WEEK[i] - SPPOW_WEEK[j]) / 2).toFixed(3); break;
             default:     m[i][j] = 0;
           }
         }
@@ -78,7 +88,8 @@
 
     var info = paramInfo[type];
     var nParams = info.params(t);
-    infoEl.innerHTML = '<strong>' + info.name + '</strong> &mdash; ' + nParams + ' covariance parameter' + (nParams !== 1 ? 's' : '') + ' for ' + t + ' visits. ' + info.desc + '.';
+    var extra = (type === 'SPPOW') ? ('<br><span style="font-size:12px;opacity:.85">' + sppowInfo(t) + '</span>') : '';
+    infoEl.innerHTML = '<strong>' + info.name + '</strong> &mdash; ' + nParams + ' covariance parameter' + (nParams !== 1 ? 's' : '') + ' for ' + t + ' visits. ' + info.desc + '.' + extra;
 
     var matrix = generateMatrix(type, t, rho);
     matrixEl.style.gridTemplateColumns = 'repeat(' + t + ', 48px)';
@@ -338,6 +349,7 @@ if (missingSelect) {
       case 'TOEP': return t;
       case 'CSH': return t + 1;
       case 'ARH1': return t + 1;
+      case 'SPPOW': return 2;
       default: return 0;
     }
   }
@@ -346,8 +358,8 @@ if (missingSelect) {
     var t = parseInt(visitsRange.value);
     visitsVal.textContent = t;
 
-    var types = ['UN', 'CS', 'AR1', 'TOEP', 'CSH', 'ARH1'];
-    var colors = ['#dc2626', '#059669', '#2563eb', '#d97706', '#7c3aed', '#0d9488'];
+    var types = ['UN', 'CS', 'AR1', 'TOEP', 'CSH', 'ARH1', 'SPPOW'];
+    var colors = ['#dc2626', '#059669', '#2563eb', '#d97706', '#7c3aed', '#0d9488', '#db2777'];
 
     // SVG chart
     var w = chartEl.clientWidth || 500;
@@ -387,7 +399,7 @@ if (missingSelect) {
     types.forEach(function (type, ti) {
       svg += '<rect x="' + lx + '" y="10" width="12" height="12" rx="3" fill="' + colors[ti] + '"/>';
       svg += '<text x="' + (lx + 16) + '" y="20" font-size="11" fill="#475569">' + type + '</text>';
-      lx += 60;
+      lx += 56;
     });
 
     svg += '</svg>';
@@ -599,7 +611,7 @@ if (document.getElementById('dataCodeDemo')) {
   var outputEl = document.getElementById('sbOutput');
 
   function paramCount(type, visits) {
-    var base = { UN: 21, CS: 2, AR1: 2, TOEP: 6 }[type] || 0;
+    var base = { UN: 21, CS: 2, AR1: 2, TOEP: 6, CSH: 7, ARH1: 7, SPPOW: 2 }[type] || 0;
     return base;
   }
 
@@ -614,9 +626,17 @@ if (document.getElementById('dataCodeDemo')) {
 
     var html = '<div style="margin-bottom:12px;">';
     html += '<strong>模型规格：</strong><br>';
-    html += 'METHOD=' + method + ' | TYPE=' + type + ' | DDFM=' + ddfm;
+    var typeLabel = { UN: 'UN', CS: 'CS', AR1: 'AR(1)', TOEP: 'TOEP', CSH: 'CSH', ARH1: 'ARH(1)', SPPOW: 'SP(POW)(WEEK)' }[type] || type;
+    html += 'METHOD=' + method + ' | TYPE=' + typeLabel + ' | DDFM=' + ddfm;
     if (group !== 'none') html += ' | GROUP=TRTP';
     html += '</div>';
+    if (type === 'SPPOW') {
+      html += '<div style="margin-bottom:12px;font-size:13px;color:var(--ink-secondary);">'
+           +  '<strong>SP(POW) 需要一个连续时间变量：</strong>'
+           +  '<code>REPEATED AVISITN / SUBJECT=USUBJID TYPE=SP(POW)(WEEK);</code>'
+           +  ' 相关结构为 ρ<sup>|t<sub>i</sub>−t<sub>j</sub>|</sup>，t 取 WEEK 的实际数值，'
+           +  '因此天然支持不等距访视；ρ 的解释依赖于 WEEK 的单位。</div>';
+    }
 
     html += '<div style="margin-bottom:12px;">';
     html += '<strong>协方差参数数量：</strong> ' + nParams + ' 个';
@@ -654,4 +674,333 @@ if (document.getElementById('dataCodeDemo')) {
   ddfmSel.addEventListener('change', update);
   groupSel.addEventListener('change', update);
   update();
+})();
+
+
+/* ============================================================
+   v2.4 · 协方差参数数推导面板（S11 参数沙盘）
+   参数个数随所选结构（UN/CS/AR1/TOEP/CSH/ARH1/SPPOW）与访视数 n 动态计算
+   ============================================================ */
+(function () {
+  var panel = document.getElementById('unParamPanel');
+  if (!panel) return;
+  var selN  = document.getElementById('unParamN');
+  /* 结构唯一入口 = 模型规格的 sbType；面板只读，不再自带下拉 */
+  var sbType = document.getElementById('sbType');
+  function curKey() { return (sbType && STRUCTS[sbType.value]) ? sbType.value : 'UN'; }
+  var title = document.getElementById('unpTitle');
+  var fmlEl = document.getElementById('unpFml');
+  var noteEl= document.getElementById('unpNote');
+  var steps = document.getElementById('unpSteps');
+  var calc  = document.getElementById('unpCalc');
+  var grid  = document.getElementById('unpGrid');
+  var cap   = document.getElementById('unpCap');
+  var tbody = document.getElementById('unpTableBody');
+  var tip   = document.getElementById('unpTip');
+
+  var SUB = '₀₁₂₃₄₅₆₇';
+  function sub(k) { return String(k).split('').map(function (d) { return SUB[+d]; }).join(''); }
+
+  /* 每种结构：参数数 q(n)、公式、说明、推导步骤、矩阵格子着色、图例、对照行、提示 */
+  var STRUCTS = {
+    UN: {
+      label: 'UN（非结构化）', short: 'UN',
+      q: function (n) { return n * (n + 1) / 2; },
+      fml: 'q_{\\mathrm{UN}} = \\dfrac{n(n+1)}{2}',
+      note: '$n$ = 重复测量的访视数（即 $\\Sigma$ 的阶数）。UN 不对方差、协方差施加任何约束，所以 $\\Sigma$ 里<strong>每一个自由格子都是一个待估参数</strong>。',
+      steps: function (n) {
+        var d = n, o = n * (n - 1) / 2;
+        return '<li>$\\Sigma$ 是 $' + n + '\\times' + n + '$ 的<strong>对称</strong>矩阵，共有 $' + n + '^2 = ' + (n * n) + '$ 个格子。</li>' +
+          '<li>对称性 $\\sigma_{ij}=\\sigma_{ji}$ 让下三角不再独立：<b>' + o + '</b> 个协方差只看上三角。<br>' +
+          '<span style="color:var(--ink-tertiary)">上三角格子数 $= \\frac{' + n + '\\times' + (n - 1) + '}{2} = ' + o + '$</span></li>' +
+          '<li>对角线上的 <b>' + d + '</b> 个方差各自独立（各访视的方差互不相同）。</li>' +
+          '<li>合计：<b>' + d + '（方差）+ ' + o + '（协方差）= ' + (d + o) + '</b>，即 $\\frac{' + n + '\\times' + (n + 1) + '}{2} = ' + (d + o) + '$。</li>';
+      },
+      cell: function (i, j) {
+        if (i === j) return { c: 'diag', l: 'σᵢ' };
+        if (j > i) return { c: 'on', l: 'σ' };
+        return { c: '', l: '·' };
+      },
+      cap: function (n) {
+        return '<span class="lg" style="background:var(--primary)"></span><b>' + n + '</b> 个自由方差（对角）<br>' +
+               '<span class="lg" style="background:var(--accent-soft)"></span><b>' + (n * (n - 1) / 2) + '</b> 个自由协方差（上三角）<br>' +
+               '<span class="lg"></span>灰 = 由对称性决定，不另计<br>' +
+               '<b style="font-size:14px">合计 ' + (n * (n + 1) / 2) + ' 个自由参数</b>';
+      },
+      comp: function (n) { return n + ' 方差 + ' + (n * (n - 1) / 2) + ' 协方差'; },
+      trend: '每加 1 访视 +n（快增）',
+      tip: '递推规律：访视数从 $n-1$ 增到 $n$，UN 参数<strong>增加 $n$ 个</strong>（$T_n-T_{n-1}=n$）——多出来的正是新访视自身的方差与它和原有 $n-1$ 个访视的协方差。' +
+           '本例 36 例受试者、6 个访视，UN 要估 <b>21</b> 个协方差参数，这正是它在小样本下容易不收敛、需要按 SAP 回退链降级到 CS 的原因（见 <a href="#s24">S24</a>）。作为对照，CS 无论多少个访视都只有 <b>2</b> 个参数。'
+    },
+    CS: {
+      label: 'CS（复合对称）', short: 'CS', q: function () { return 2; },
+      fml: 'q_{\\mathrm{CS}} = 2',
+      note: 'CS 假定<strong>方差齐性、相关恒定</strong>：整张 $\\Sigma$ 只由两个数生成。',
+      steps: function (n) {
+        return '<li>$\\Sigma$ 的 $' + (n * n) + '$ 个格子被强行压成两种取值。</li>' +
+          '<li>对角线元素<strong>全部相等</strong> → 只估 <b>1</b> 个方差参数（SAS 输出中的 Residual）。</li>' +
+          '<li>所有非对角元素<strong>全部相等</strong> → 只估 <b>1</b> 个协方差参数（SAS 输出中的 CS）。</li>' +
+          '<li>合计：1 + 1 = <b>2</b>，与访视数 $n$ 无关。</li>';
+      },
+      cell: function (i, j) {
+        if (i === j) return { c: 'shr', l: 'σ²' };
+        if (j > i) return { c: 'shr', l: 'c' };
+        return { c: '', l: '·' };
+      },
+      cap: function () {
+        return '<span class="lg" style="background:#fff4e0"></span>琥珀 = 同一参数的重复格子（对角共享 σ²、非对角共享 c）<br>' +
+               '<span class="lg"></span>灰 = 由对称性决定<br><b style="font-size:14px">合计 2 个自由参数</b>';
+      },
+      comp: function () { return '1 共享方差 + 1 共享协方差'; },
+      trend: '恒定',
+      tip: 'CS 恒为 <b>2</b> 个参数——本例 SAS 最终报告 CS，正是 UN（6 访视 21 个）在 36 例小样本下不收敛后按 SAP 回退链降级的结果（见 <a href="#s24">S24</a>）。参数少而稳，但若真实方差随访视变化，会有模型误设风险（对照见 5.2）。'
+    },
+    AR1: {
+      label: 'AR(1)', short: 'AR(1)', q: function () { return 2; },
+      fml: 'q_{\\mathrm{AR(1)}} = 2',
+      note: '$\\Sigma_{ij}=\\sigma^2\\rho^{|i-j|}$：方差齐性，相关随滞后阶几何衰减。',
+      steps: function (n) {
+        return '<li>对角元素共享同一方差 $\\sigma^2$（<b>1</b> 个参数）。</li>' +
+          '<li>协方差不由参数直接给出，而是 $\\sigma^2\\rho^{|i-j|}$ 生成——$\\rho$ 是唯一的自相关参数（<b>1</b> 个）。</li>' +
+          '<li>上三角各格子的<strong>数值</strong>随滞后阶不同，但都由 $\\sigma^2$ 与 $\\rho$ 算出，<strong>不是自由参数</strong>。</li>' +
+          '<li>合计：$\\sigma^2 + \\rho$ = <b>2</b>，与 $n$ 无关。</li>';
+      },
+      cell: function (i, j) {
+        if (i === j) return { c: 'shr', l: 'σ²' };
+        if (j > i) return { c: 'det', l: 'ρ' };
+        return { c: '', l: '·' };
+      },
+      cap: function () {
+        return '<span class="lg" style="background:#fff4e0"></span>琥珀 = 共享的 σ²（1 个参数）<br>' +
+               '<span class="lg" style="background:#eef1f6"></span>蓝灰 = 由 σ² 与 ρ 决定，不另计参数<br>' +
+               '<b style="font-size:14px">合计 2 个自由参数</b>';
+      },
+      comp: function () { return '1 方差 + 1 自相关'; },
+      trend: '恒定',
+      tip: 'AR(1) 恒为 <b>2</b> 个参数。它假设等间距的相关衰减——若访视间隔不等（如 2/4/8/12/16 周），应改用按真实时间计距离的 SP(POW)。'
+    },
+    TOEP: {
+      label: 'TOEP', short: 'TOEP', q: function (n) { return n; },
+      fml: 'q_{\\mathrm{TOEP}} = n',
+      note: 'TOEP = 自回归协方差带 + <strong>共享方差</strong>：每个滞后阶一个自由协方差。',
+      steps: function (n) {
+        return '<li>对角元素共享同一方差 $\\sigma_0$（<b>1</b> 个参数）。</li>' +
+          '<li>滞后 1, 2, …, $' + (n - 1) + '$ 阶的协方差各自独立：$\\sigma_1, \\sigma_2, \\ldots, \\sigma_{' + (n - 1) + '}$（<b>' + (n - 1) + '</b> 个参数）。</li>' +
+          '<li>同一滞后阶的格子（与对角线平行的斜线）共享同一个参数。</li>' +
+          '<li>合计：1 + ' + (n - 1) + ' = <b>' + n + '</b>。</li>';
+      },
+      cell: function (i, j) {
+        if (i === j) return { c: 'shr', l: 'σ₀' };
+        if (j > i) return { c: 'lag', l: 'σ' + sub(j - i) };
+        return { c: '', l: '·' };
+      },
+      cap: function (n) {
+        return '<span class="lg" style="background:#fff4e0"></span>琥珀 = 共享方差 σ₀（1 个参数）<br>' +
+               '<span class="lg" style="background:var(--teal-soft)"></span>青 = 各滞后阶协方差 σ₁…σ' + sub(n - 1) + '（' + (n - 1) + ' 个参数）<br>' +
+               '<b style="font-size:14px">合计 ' + n + ' 个自由参数</b>';
+      },
+      comp: function (n) { return '1 共享方差 + ' + (n - 1) + ' 滞后协方差'; },
+      trend: '每加 1 访视 +1',
+      tip: 'TOEP 每多一个访视只多 <b>1</b> 个参数，是 UN（快增）与 CS（恒定）之间的折中：保留"近相关强、远相关弱"的结构，但放弃异质方差。'
+    },
+    CSH: {
+      label: 'CSH（异质 CS）', short: 'CSH', q: function (n) { return n + 1; },
+      fml: 'q_{\\mathrm{CSH}} = n + 1',
+      note: 'CSH = CS 的<strong>异质方差</strong>版：对角各自独立，相关仍恒定。',
+      steps: function (n) {
+        return '<li>方差异质：$\\sigma_1^2, \\ldots, \\sigma_{' + n + '}^2$ 各自独立（<b>' + n + '</b> 个参数）。</li>' +
+          '<li>所有协方差共享同一相关系数 $\\rho$：$\\Sigma_{ij}=\\rho\\,\\sigma_i\\sigma_j$（<b>1</b> 个参数）。</li>' +
+          '<li>合计：' + n + ' + 1 = <b>' + (n + 1) + '</b>。</li>';
+      },
+      cell: function (i, j) {
+        if (i === j) return { c: 'diag', l: 'σᵢ' };
+        if (j > i) return { c: 'shr', l: 'ρ' };
+        return { c: '', l: '·' };
+      },
+      cap: function (n) {
+        return '<span class="lg" style="background:var(--primary)"></span><b>' + n + '</b> 个异质方差（对角各自自由）<br>' +
+               '<span class="lg" style="background:#fff4e0"></span>琥珀 = 共享相关 ρ（1 个参数）<br>' +
+               '<b style="font-size:14px">合计 ' + (n + 1) + ' 个自由参数</b>';
+      },
+      comp: function (n) { return n + ' 异质方差 + 1 共享相关'; },
+      trend: '每加 1 访视 +1',
+      tip: 'CSH 比多一个访视多 <b>1</b> 个参数。SAP 回退链里的 TOEPH(1)/HCS 即这一族的成员——异质方差常是 UN 收敛失败后仍想保留的第一步放松。'
+    },
+    ARH1: {
+      label: 'ARH(1)', short: 'ARH(1)', q: function (n) { return n + 1; },
+      fml: 'q_{\\mathrm{ARH(1)}} = n + 1',
+      note: 'ARH(1) = AR(1) 的<strong>异质方差</strong>版：$\\Sigma_{ij}=\\sigma_i\\sigma_j\\rho^{|i-j|}$。',
+      steps: function (n) {
+        return '<li>对角 $\\sigma_1^2, \\ldots, \\sigma_{' + n + '}^2$ 各自独立（<b>' + n + '</b> 个参数）。</li>' +
+          '<li>协方差由 $\\sigma_i\\sigma_j\\rho^{|i-j|}$ 生成，除方差外只含 <b>1</b> 个自相关 $\\rho$。</li>' +
+          '<li>合计：' + n + ' + 1 = <b>' + (n + 1) + '</b>。</li>';
+      },
+      cell: function (i, j) {
+        if (i === j) return { c: 'diag', l: 'σᵢ' };
+        if (j > i) return { c: 'det', l: 'ρ' };
+        return { c: '', l: '·' };
+      },
+      cap: function (n) {
+        return '<span class="lg" style="background:var(--primary)"></span><b>' + n + '</b> 个异质方差（对角各自自由）<br>' +
+               '<span class="lg" style="background:#eef1f6"></span>蓝灰 = 由方差与 ρ 决定，不另计参数<br>' +
+               '<b style="font-size:14px">合计 ' + (n + 1) + ' 个自由参数</b>';
+      },
+      comp: function (n) { return n + ' 异质方差 + 1 自相关'; },
+      trend: '每加 1 访视 +1',
+      tip: 'ARH(1) 同样是 <b>n+1</b>：多出来的参数全花在异质方差上。若相关结构近似 AR(1) 而方差明显随访视变化，它比 UN 省得多又比 AR(1) 灵活。'
+    },
+    SPPOW: {
+      label: 'SP(POW)', short: 'SP(POW)', q: function () { return 2; },
+      fml: 'q_{\\mathrm{SP(POW)}} = 2',
+      note: '$\\Sigma_{ij}=\\sigma^2\\rho^{\\,|t_i-t_j|}$：距离用<strong>真实时间</strong>而非滞后阶数。',
+      steps: function (n) {
+        return '<li>对角元素共享同一方差 $\\sigma^2$（<b>1</b> 个参数）。</li>' +
+          '<li>协方差由 $\\sigma^2\\rho^{\\,|t_i-t_j|}$ 生成：$\\rho$ 是每单位时间的衰减（<b>1</b> 个参数）。</li>' +
+          '<li>本演示的访视计划为 2/4/8/12/16 周：W2 与 W4 相关 $=\\rho^{2/2}$，W2 与 W16 相关 $=\\rho^{14/2}$。</li>' +
+          '<li>合计：<b>2</b>，与 $n$ 无关。</li>';
+      },
+      cell: function (i, j) {
+        if (i === j) return { c: 'shr', l: 'σ²' };
+        if (j > i) return { c: 'det', l: 'ρᵈ' };
+        return { c: '', l: '·' };
+      },
+      cap: function () {
+        return '<span class="lg" style="background:#fff4e0"></span>琥珀 = 共享的 σ²（1 个参数）<br>' +
+               '<span class="lg" style="background:#eef1f6"></span>蓝灰 = 由 σ²、ρ 与时间距离决定<br>' +
+               '<b style="font-size:14px">合计 2 个自由参数</b>';
+      },
+      comp: function () { return '1 方差 + 1 距离相关'; },
+      trend: '恒定',
+      tip: 'SP(POW) 恒为 <b>2</b> 个参数。它与 AR(1) 的本质区别：AR(1) 按"隔几个访视"衰减，SP(POW) 按"隔几周"衰减——不等间距设计下二者给出的 $\\Sigma$ 完全不同。'
+    }
+  };
+
+  var ORDER = ['UN', 'CS', 'AR1', 'TOEP', 'CSH', 'ARH1', 'SPPOW'];
+  function nameOf(k) {
+    return { UN: 'UN', CS: 'CS', AR1: 'AR(1)', TOEP: 'TOEP', CSH: 'CSH', ARH1: 'ARH(1)', SPPOW: 'SP(POW)' }[k] || k;
+  }
+
+  function render() {
+    var key = curKey();
+    var S = STRUCTS[key];
+    if (!S) return;
+    var n = parseInt(selN.value, 10);
+    var q = S.q(n);
+
+    title.innerHTML = S.label + ' 协方差参数数：$n=' + n + '$ 时 <b>' + q + '</b> 个 —— 公式与代入';
+    fmlEl.innerHTML = '$' + S.fml.replace(/n/g, 'n') + '$';
+    noteEl.innerHTML = S.note;
+    steps.innerHTML = S.steps(n);
+    calc.textContent = 'n = ' + n + '  →  q = ' + q + ' 个协方差参数';
+
+    var gh = '';
+    for (var i = 0; i < n; i++) {
+      for (var jj = 0; jj < n; jj++) {
+        var sp = S.cell(i, jj, n);
+        var cls = 'unp-cell' + (sp.c ? ' ' + sp.c : '');
+        gh += '<div class="' + cls + '" title="第 ' + (i + 1) + ' 行 · 第 ' + (jj + 1) + ' 列">' + sp.l + '</div>';
+      }
+    }
+    grid.style.gridTemplateColumns = 'repeat(' + n + ', 34px)';
+    grid.innerHTML = gh;
+    cap.innerHTML = S.cap(n);
+
+    var rows = '';
+    for (var r = 0; r < ORDER.length; r++) {
+      var k = ORDER[r], Sk = STRUCTS[k], qk = Sk.q(n);
+      rows += '<tr' + (k === key ? ' class="hi"' : '') + '>' +
+              '<td>' + nameOf(k) + (k === key ? ' ←' : '') + '</td>' +
+              '<td>$' + Sk.fml + '$</td>' +
+              '<td>' + Sk.comp(n) + '</td>' +
+              '<td><b>' + qk + '</b></td>' +
+              '<td>' + Sk.trend + '</td></tr>';
+    }
+    tbody.innerHTML = rows;
+    tip.innerHTML = S.tip;
+
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      window.MathJax.typesetPromise([panel]).catch(function () {});
+    }
+  }
+
+  selN.addEventListener('change', render);
+  if (sbType) sbType.addEventListener('change', render);
+
+  render();
+})();
+
+/* ============================================================
+   v2.5 · archify 图窗缩放：子页面按 1280×DH 固定排版（?kiosk=1），
+   宿主按容器宽度 transform:scale 等比缩放 —— 任何窗口尺寸都完整显示。
+   ============================================================ */
+(function () {
+  var DW = 1280;
+
+  function poke(f) {
+    if (!f || !f.contentWindow) return;
+    try {
+      f.contentWindow.dispatchEvent(new Event('resize'));
+      var d = f.contentWindow.document;
+      if (d && d.dispatchEvent) d.dispatchEvent(new Event('resize'));
+    } catch (e) { /* 跨域忽略 */ }
+  }
+
+  function dhOf(f) { return parseFloat(f.getAttribute('data-dh')) || parseFloat(f.style.height) || 800; }
+
+  /* 宿主侧缩放：宽度铺满容器，高度按比例收缩 */
+  function fit(w) {
+    var f = w.querySelector('iframe');
+    if (!f) return;
+    var cw = w.clientWidth;
+    if (!cw) return;
+    var dh = dhOf(f);
+    var sc = cw / DW;
+    f.style.transform = 'scale(' + sc + ')';
+    w.style.height = (cw * dh / DW) + 'px';
+  }
+
+  function fitAll() {
+    document.querySelectorAll('.figframe .fig-scale').forEach(fit);
+    var m = document.getElementById('figModalFrame');
+    if (m && window.fitModal) window.fitModal();
+  }
+
+  function wire(f) {
+    if (!f || f.dataset.figWired === '1') return;
+    f.dataset.figWired = '1';
+    f.addEventListener('load', function () {
+      poke(f);
+      setTimeout(function () { poke(f); }, 150);
+      setTimeout(function () { poke(f); }, 700);
+    });
+  }
+
+  function wireAll() {
+    document.querySelectorAll('.figframe iframe').forEach(wire);
+    var m = document.getElementById('figModalFrame');
+    if (m) wire(m);
+    fitAll();
+  }
+
+  var t = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(t);
+    t = setTimeout(function () {
+      document.querySelectorAll('.figframe iframe').forEach(poke);
+      fitAll();
+    }, 180);
+  });
+
+  var modal = document.getElementById('figModal');
+  if (modal && window.MutationObserver) {
+    new MutationObserver(function () {
+      if (modal.classList.contains('open')) {
+        var m = document.getElementById('figModalFrame');
+        if (m) { poke(m); setTimeout(function () { poke(m); }, 220); setTimeout(function () { poke(m); }, 800); }
+      }
+    }).observe(modal, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireAll);
+  else wireAll();
 })();

@@ -1,0 +1,247 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "MMRM 常见 SAS 提示排查决策流",
+    "output": "figs/fig24-troubleshoot.html",
+    "animation": "trace",
+    "visual_preset": "signal-flow",
+    "quality_profile": "showcase",
+    "locale": "zh-CN",
+    "views": [
+      {
+        "id": "classify",
+        "label": "第一步：先分类",
+        "focus": [
+          "classify",
+          "b_finish",
+          "b_stop",
+          "b_note"
+        ],
+        "note": "先判断模型有没有跑完，再判断结果能不能用。"
+      },
+      {
+        "id": "act",
+        "label": "第二步：改什么",
+        "focus": [
+          "fix_init",
+          "fix_struct",
+          "fix_record"
+        ],
+        "note": "不同类别对应完全不同的修改动作。"
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "cls",
+      "label": "Step 1 分类"
+    },
+    {
+      "id": "finished",
+      "label": "跑完但不可信"
+    },
+    {
+      "id": "stopped",
+      "label": "未跑完：结果无效",
+      "variant": "exception"
+    },
+    {
+      "id": "note",
+      "label": "必须留痕"
+    },
+    {
+      "id": "fix",
+      "label": "修改动作"
+    }
+  ],
+  "phases": [
+    {
+      "id": "p1",
+      "label": "识别",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "p2",
+      "label": "定位",
+      "fromCol": 2,
+      "toCol": 3
+    },
+    {
+      "id": "p3",
+      "label": "处理",
+      "fromCol": 4,
+      "toCol": 5,
+      "variant": "emphasis"
+    }
+  ],
+  "mainPath": [
+    "classify",
+    "b_stop",
+    "b_many",
+    "fix_init",
+    "fix_struct",
+    "fix_record"
+  ],
+  "nodes": [
+    {
+      "id": "classify",
+      "lane": "cls",
+      "col": 0,
+      "type": "backend",
+      "label": "读状态",
+      "sublabel": "ConvergenceStatus"
+    },
+    {
+      "id": "b_finish",
+      "lane": "finished",
+      "col": 1,
+      "type": "messagebus",
+      "label": "Hessian 非正定",
+      "sublabel": "WARNING"
+    },
+    {
+      "id": "b_asy",
+      "lane": "finished",
+      "col": 2,
+      "type": "messagebus",
+      "label": "AsyCov 奇异",
+      "sublabel": "GINV"
+    },
+    {
+      "id": "b_stop",
+      "lane": "stopped",
+      "col": 1,
+      "type": "security",
+      "label": "未收敛",
+      "sublabel": "MAXITER"
+    },
+    {
+      "id": "b_many",
+      "lane": "stopped",
+      "col": 2,
+      "type": "security",
+      "label": "评估超限",
+      "sublabel": "MAXFUNC"
+    },
+    {
+      "id": "b_note",
+      "lane": "note",
+      "col": 1,
+      "type": "database",
+      "label": "零方差参数",
+      "sublabel": "NOTE"
+    },
+    {
+      "id": "fix_init",
+      "lane": "fix",
+      "col": 3,
+      "type": "cloud",
+      "label": "换初值 / 算法",
+      "sublabel": "PARMS"
+    },
+    {
+      "id": "fix_struct",
+      "lane": "fix",
+      "col": 4,
+      "type": "cloud",
+      "label": "结构降级链",
+      "sublabel": "按 AIC"
+    },
+    {
+      "id": "fix_record",
+      "lane": "fix",
+      "col": 5,
+      "type": "external",
+      "label": "记录说明",
+      "sublabel": "SAP 预定义"
+    }
+  ],
+  "edges": [
+    {
+      "from": "classify",
+      "to": "b_finish",
+      "label": "WARNING",
+      "variant": "emphasis"
+    },
+    {
+      "from": "classify",
+      "to": "b_stop",
+      "label": "状态 1",
+      "variant": "security"
+    },
+    {
+      "from": "classify",
+      "to": "b_note",
+      "label": "NOTE",
+      "variant": "default"
+    },
+    {
+      "from": "b_finish",
+      "to": "b_asy",
+      "variant": "default"
+    },
+    {
+      "from": "b_stop",
+      "to": "b_many",
+      "variant": "security"
+    },
+    {
+      "from": "b_asy",
+      "to": "fix_struct",
+      "variant": "emphasis"
+    },
+    {
+      "from": "b_many",
+      "to": "fix_init",
+      "variant": "security"
+    },
+    {
+      "from": "b_note",
+      "to": "fix_record",
+      "variant": "dashed"
+    },
+    {
+      "from": "fix_init",
+      "to": "fix_struct",
+      "label": "仍不收敛",
+      "variant": "dashed"
+    },
+    {
+      "from": "fix_struct",
+      "to": "fix_record",
+      "label": "留痕",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "未跑完 ≠ 改结构",
+      "items": [
+        "Did not converge 与评估次数超限都属于迭代预算耗尽",
+        "优先调初值、算法与迭代上限，不要一上来就放弃 UN",
+        "结构降级是第二步，且必须在 SAP 里预先定义"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "跑完但不可信更危险",
+      "items": [
+        "Hessian 非正定与 AsyCov 奇异不会阻止输出，日志只给 WARNING",
+        "此时点估计仍可用，SE、DF、置信区间与 P 值不可信",
+        "典型原因是参数落在边界、结构过参数化或访视单元格稀疏"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "零方差参数只是提示",
+      "items": [
+        "某个协方差参数估计为 0 时不进入 KR 自由度计算",
+        "它通常说明该参数在当前数据下不可识别",
+        "必须在报告中说明，但不一定需要修改模型"
+      ]
+    }
+  ]
+}

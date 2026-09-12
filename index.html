@@ -87,7 +87,7 @@ window.MathJax = {
 
 /* ============ RESET & BASE ============ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; scroll-padding-top: calc(var(--header-h) + 32px); }
+html { scroll-behavior: auto; scroll-padding-top: calc(var(--header-h) + 28px); }
 body {
   background: var(--bg);
   color: var(--ink);
@@ -263,11 +263,12 @@ code, kbd { font-family: var(--font-mono); font-size: 0.85em; background: var(--
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 44px 48px;
-  margin-bottom: 40px;
+  padding: 32px 36px;
+  margin-bottom: 26px;
   box-shadow: var(--shadow-sm);
   position: relative;
   overflow: hidden;
+  scroll-margin-top: calc(var(--header-h) + 24px);
   opacity: 0;
   transform: translateY(16px);
   transition: opacity .5s var(--ease), transform .5s var(--ease), box-shadow .3s var(--ease);
@@ -855,8 +856,8 @@ code, kbd { font-family: var(--font-mono); font-size: 0.85em; background: var(--
   .sidebar-mask.open { display: block; }
   .main { margin-left: 0; }
   .menu-toggle { display: block; }
-  .content { padding: 32px 24px 60px; }
-  .sec { padding: 32px 28px; }
+  .content { padding: 26px 20px 48px; }
+  .sec { padding: 26px 22px; margin-bottom: 20px; }
   .hero { padding: 40px 32px; grid-template-columns: 1fr; }
   .hero h1 { font-size: 34px; }
   .hero-matrix { justify-self: center; margin-top: 24px; }
@@ -995,6 +996,129 @@ code, kbd { font-family: var(--font-mono); font-size: 0.85em; background: var(--
   .mat-grid-container { flex-direction: column; align-items: center; }
   .cov-controls { flex-direction: column; gap: 10px; }
 }
+
+/* ============================================
+   v2.0 additions — figure frames & ODS pipeline
+   ============================================ */
+.figframe{margin:24px 0 28px;border:1px solid var(--border);border-radius:14px;background:var(--surface);overflow:hidden;box-shadow:var(--shadow-sm)}
+.figframe-bar{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;padding:11px 16px;background:var(--surface-alt);border-bottom:1px solid var(--border);font-size:13px;font-weight:600;color:var(--ink-secondary)}
+.figframe-bar .fig-hint{font-weight:400;font-size:12px;color:var(--ink-tertiary)}
+.figframe .fig-scale{position:relative;width:100%;overflow:hidden}
+.figframe .fig-scale iframe{display:block;width:1280px;transform-origin:0 0;border:0;background:#fff}
+.unp-sync{font-size:12px;color:var(--ink-tertiary)}
+.figframe-note{padding:10px 16px;border-top:1px solid var(--border);font-size:12.5px;color:var(--ink-tertiary);background:var(--surface-alt)}
+.odstrack{display:flex;align-items:stretch;gap:10px;padding:18px;overflow-x:auto}
+.ods-col{flex:1 1 0;min-width:190px;display:flex;flex-direction:column;gap:8px}
+.ods-col-head{font-size:11.5px;font-weight:700;letter-spacing:.05em;color:var(--ink-tertiary);padding-bottom:6px;border-bottom:1px dashed var(--border-strong)}
+.ods-item{font-size:13px;line-height:1.55;padding:9px 11px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--ink)}
+.ods-item b{color:var(--primary)}
+.ods-arrow{display:flex;align-items:center;flex:0 0 auto;font-size:20px;color:var(--accent)}
+
+
+/* ---- 图窗放大：默认一屏可读 + 全屏查看 ---- */
+.figframe{width:100%}
+/* 宽屏外扩只到 .sec 的 padding box（+72px / -36px），避免被 .sec 的 overflow:hidden 裁掉两侧 */
+@media(min-width:1300px){
+  .content .figframe{width:calc(100% + 72px);margin-left:-36px;max-width:none}
+}
+.figframe-bar .fig-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.fig-btn{border:1px solid var(--border-strong);background:var(--surface);color:var(--primary);font:inherit;font-size:12px;font-weight:600;padding:5px 11px;border-radius:7px;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s,border-color .15s}
+.fig-btn:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+.fig-modal{position:fixed;inset:0;z-index:9999;display:none;background:rgba(10,20,30,.72)}
+.fig-modal.open{display:flex;align-items:center;justify-content:center;padding:2vh 2vw}
+.fig-modal-inner{position:relative;width:96vw;height:94vh;max-width:1800px;background:var(--surface);border-radius:14px;overflow:hidden;box-shadow:var(--shadow-xl);display:flex;flex-direction:column}
+.fig-modal-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 16px;background:var(--surface-alt);border-bottom:1px solid var(--border);font-size:13px;font-weight:600;color:var(--ink-secondary);position:relative;z-index:2}
+.fig-modal-bar .fig-modal-tools{display:flex;gap:8px;align-items:center;flex:0 0 auto}
+.fig-modal-body{position:relative;flex:1 1 auto;min-height:0;overflow:hidden}
+.fig-modal-body iframe{position:absolute;left:50%;top:50%;border:0;background:#fff}
+body.fig-modal-open{overflow:hidden}
+
+/* ============================================================
+   v2.3 · UN 参数数推导面板
+   ============================================================ */
+.un-param-panel{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:16px 18px;margin:18px 0 20px;box-shadow:var(--shadow-sm);
+}
+.unp-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  padding-bottom:10px;margin-bottom:14px;border-bottom:1px solid var(--border)}
+.unp-head h4{margin:0;font-size:15.5px;color:var(--primary)}
+.unp-pick{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-secondary)}
+.unp-pick select{padding:5px 9px;border:1px solid var(--border);border-radius:7px;
+  font-size:13px;background:var(--surface);color:var(--ink)}
+.unp-body{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:22px;align-items:start}
+@media(max-width:900px){.unp-body{grid-template-columns:1fr}}
+.unp-formula{
+  background:var(--primary-soft);border-left:3px solid var(--accent);border-radius:8px;
+  padding:12px 14px;margin-bottom:12px;
+}
+.unp-formula .fml{font-family:var(--font-mono,"JetBrains Mono",monospace);font-size:17px;
+  color:var(--primary);font-weight:600;letter-spacing:.2px}
+.unp-formula .fml-note{display:block;margin-top:6px;font-size:12.5px;color:var(--ink-tertiary);line-height:1.6}
+.unp-steps{margin:0 0 0 20px;font-size:13.5px;line-height:1.85;color:var(--ink)}
+.unp-steps li{margin-bottom:5px}
+.unp-steps code{background:var(--surface-alt);padding:1px 5px;border-radius:4px;font-size:12.5px}
+.unp-steps b{color:var(--primary)}
+.unp-vis{text-align:center}
+.unp-grid{
+  display:grid;gap:3px;margin:2px auto 8px;width:max-content;
+}
+.unp-cell{
+  width:30px;height:30px;border-radius:5px;display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-family:var(--font-mono,"JetBrains Mono",monospace);
+  border:1px solid var(--border);background:#f3f5f7;color:var(--ink-tertiary)
+}
+.unp-cell.on{background:var(--accent-soft);border-color:var(--accent);color:var(--primary)}
+.unp-cell.diag{background:var(--primary);border-color:var(--primary);color:#fff}
+.unp-cap{font-size:12.5px;color:var(--ink-secondary);line-height:1.7;margin-top:6px}
+.unp-cap b{color:var(--primary)}
+.unp-calc{
+  margin-top:10px;padding:9px 12px;background:var(--surface-alt);border-radius:8px;
+  font-family:var(--font-mono,"JetBrains Mono",monospace);font-size:13px;color:var(--primary)
+}
+.unp-foot{margin-top:16px;padding-top:12px;border-top:1px dashed var(--border)}
+.unp-foot table{width:100%;border-collapse:collapse;font-size:12.8px}
+.unp-foot th{background:var(--primary);color:#fff;padding:6px 9px;text-align:center;font-weight:600;font-size:12px}
+.unp-foot td{padding:6px 9px;text-align:center;border-bottom:1px solid var(--border);color:var(--ink)}
+.unp-foot tr:nth-child(even) td{background:#fafbfc}
+.unp-foot tr.hi td{background:var(--accent-soft);font-weight:600;color:var(--primary)}
+.unp-foot .unp-tip{margin-top:10px;font-size:12.5px;color:var(--ink-tertiary);line-height:1.7}
+/* 按结构区分的格子角色：自由方差 / 自由协方差 / 共享参数 / 滞后参数 / 被决定 */
+.unp-cell.shr{background:#fff4e0;border-color:#d9a441;color:#8a5b00}
+.unp-cell.lag{background:var(--teal-soft);border-color:var(--teal);color:var(--teal)}
+.unp-cell.det{background:#eef1f6;border-color:var(--border-strong);color:var(--ink-secondary)}
+.unp-cap .lg{display:inline-block;width:10px;height:10px;border-radius:3px;border:1px solid var(--border-strong);margin-right:5px;vertical-align:-1px}
+
+/* ============================================================
+   v2.3 · 布局密度优化
+   ============================================================ */
+:root{ --content-max: 980px; }
+.content{ padding: 34px 36px 64px; }
+.content .sec-head{ margin-bottom: 20px; padding-bottom: 8px; }
+.content h3{ margin-bottom: 12px; }
+.content h4{ margin-bottom: 8px; }
+.content .table-wrap{ margin: 18px 0; }
+.content .table-wrap th{ padding: 9px 12px; }
+.content .table-wrap td{ padding: 8px 12px; }
+.content .table-wrap table{ font-size: 13.5px; }
+.content ul, .content ol{ margin: 10px 0 16px 22px; }
+.content li{ margin-bottom: 5px; }
+.content .step-cards{ margin: 16px 0; gap: 12px; }
+/* 只动上下外边距，不能写 margin 简写——否则会把 @media(min-width:1300px)
+   里 .figframe 的 margin-left:-36px 覆盖归零，导致加宽后右缘被 .sec 裁切 */
+.content .figframe{ margin-top: 20px; margin-bottom: 24px; }
+.content .callout{ margin: 16px 0; }
+.content .codeblock{ margin: 14px 0; }
+@media(min-width:1100px){
+  .content .step-cards{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; align-items:start; }
+  .content .step-cards > .step-card{ height:100%; }
+}
+
+@media(max-width:720px){
+  :root{ --content-max: 100%; }
+  .content{ padding: 20px 16px 48px; }
+}
+
 </style>
 </head>
 <body>
@@ -1038,7 +1162,7 @@ code, kbd { font-family: var(--font-mono); font-size: 0.85em; background: var(--
     <div class="sb-chapter-title">MMRM Theory</div>
     <a class="toc-link" href="#s4"><span class="toc-num">04</span> MMRM 核心原理</a>
     <a class="toc-link" href="#s5"><span class="toc-num">05</span> 协方差结构详解 + 交互实验室</a>
-    <a class="toc-link" href="#s6"><span class="toc-num">06</span> 缺失数据与 MAR 假设 + 交互演示</a>
+    <a class="toc-link" href="#s6"><span class="toc-num">06</span> 缺失数据、MAR 与敏感性分析</a>
     <a class="toc-link" href="#s7"><span class="toc-num">07</span> 估计与推断：REML 与 Kenward-Roger</a>
   </div>
 
@@ -1057,6 +1181,15 @@ code, kbd { font-family: var(--font-mono); font-size: 0.85em; background: var(--
     <a class="toc-link" href="#s14"><span class="toc-num">14</span> 常见误区与自检清单</a>
     <a class="toc-link" href="#s15"><span class="toc-num">15</span> 估计目标与 ICH E9(R1)</a>
     <a class="toc-link" href="#s16"><span class="toc-num">16</span> 监管视角：FDA / EMA / ICH</a>
+  </div>
+
+  <div class="sb-chapter">
+    <div class="sb-chapter-title">Advanced Practice</div>
+    <a class="toc-link" href="#s20"><span class="toc-num">20</span> 输出数据集：LSMESTIMATE / SLICE / STORE</a>
+    <a class="toc-link" href="#s21"><span class="toc-num">21</span> DIFFs 与 ESTIMATE / CONTRAST 对比</a>
+    <a class="toc-link" href="#s22"><span class="toc-num">22</span> 实跑示例：逐表解读与临床解读</a>
+    <a class="toc-link" href="#s23"><span class="toc-num">23</span> 方差参数估计：REML 完整推导</a>
+    <a class="toc-link" href="#s24"><span class="toc-num">24</span> SAS 报错排查与修改策略</a>
   </div>
 
   <div class="sb-chapter">
@@ -1086,7 +1219,7 @@ code, kbd { font-family: var(--font-mono); font-size: 0.85em; background: var(--
      ========================================== -->
 <section class="hero" id="s0">
   <div class="hero-text">
-    <div class="hero-label">MMRM 完整学习指南</div>
+    <div class="hero-label">MMRM 完整学习指南 · v2.0 增补篇</div>
     <h1>从矩阵基础到监管提交</h1>
     <p class="hero-subtitle">
       面向临床试验统计人员的重复测量混合模型完整学习资源。涵盖理论推导、SAS/R 实现、协方差结构选择、缺失数据处理、ICH E9(R1) 估计目标框架，以及监管视角。
@@ -1094,15 +1227,15 @@ code, kbd { font-family: var(--font-mono); font-size: 0.85em; background: var(--
 
     <div class="hero-stats">
       <div class="hero-stat">
-        <div class="hero-stat-value">20</div>
+        <div class="hero-stat-value">25</div>
         <div class="hero-stat-label">内容章节</div>
       </div>
       <div class="hero-stat">
-        <div class="hero-stat-value">6</div>
+        <div class="hero-stat-value">9</div>
         <div class="hero-stat-label">交互演示</div>
       </div>
       <div class="hero-stat">
-        <div class="hero-stat-value">~60</div>
+        <div class="hero-stat-value">~95</div>
         <div class="hero-stat-label">分钟阅读</div>
       </div>
       <div class="hero-stat">
@@ -1499,10 +1632,10 @@ code, kbd { font-family: var(--font-mono); font-size: 0.85em; background: var(--
     <div class="sec-ghost">05</div>
     <div class="sec-title">
       <h2>协方差结构详解</h2>
-      <p class="sec-subtitle">UN / CS / AR(1) / TOEP / CSH / ARH(1) —— 灵活性与约束之间的取舍</p>
+      <p class="sec-subtitle">UN / CS / AR(1) / TOEP / CSH / ARH(1) / SP(POW) —— 灵活性与约束之间的取舍</p>
       <div class="sec-chips">
         <span class="badge badge-accent">交互实验室</span>
-        <span class="badge badge-primary">6 种结构</span>
+        <span class="badge badge-primary">7 种结构</span>
       </div>
     </div>
   </div>
@@ -1517,7 +1650,7 @@ code, kbd { font-family: var(--font-mono); font-size: 0.85em; background: var(--
     MODEL 和 REPEATED 互有影响。协方差结构会影响标准误、置信区间和 P 值；在缺失或访视不平衡时，还可能影响固定效应估计的权重，进而影响 LSMean 和治疗差值。
   </div>
 
-  <h3>5.2 四种常见结构对比</h3>
+  <h3>5.2 常见结构对比</h3>
   <div class="table-wrap">
     <table>
       <thead>
@@ -1530,6 +1663,7 @@ code, kbd { font-family: var(--font-mono); font-size: 0.85em; background: var(--
         <tr><td><strong>TOEP</strong>（Toeplitz）</td><td>6</td><td>相同滞后阶数共享协方差</td><td>比 CS 灵活，比 UN 约束更多</td><td>仍然不是完全自由</td></tr>
         <tr><td><strong>CSH</strong>（异质复合对称）</td><td>7</td><td>方差可不同，协方差相同</td><td>允许异方差</td><td>参数比 CS 多</td></tr>
         <tr><td><strong>ARH(1)</strong>（异质自回归）</td><td>7</td><td>方差可不同，相关按 AR(1) 衰减</td><td>灵活且参数适中</td><td>需要足够数据支持</td></tr>
+        <tr><td><strong>SP(POW)</strong>（空间幂）</td><td>2</td><td>方差异质可选；相关 $= \rho^{|t_i-t_j|}$，$t$ 为<strong>实际访视时间</strong></td><td>用真实时间坐标，天然处理不等距访视</td><td>必须提供连续时间变量；时间单位影响 $\rho$ 的解释</td></tr>
       </tbody>
     </table>
   </div>
@@ -1559,6 +1693,7 @@ code, kbd { font-family: var(--font-mono); font-size: 0.85em; background: var(--
           <option value="TOEP">TOEP（Toeplitz）</option>
           <option value="CSH">CSH（异质复合对称）</option>
           <option value="ARH1">ARH(1)（异质自回归）</option>
+          <option value="SPPOW">SP(POW)（空间幂，用实际时间坐标）</option>
         </select>
       </div>
       <div>
@@ -1589,11 +1724,13 @@ code, kbd { font-family: var(--font-mono); font-size: 0.85em; background: var(--
   <div class="sec-head">
     <div class="sec-ghost">06</div>
     <div class="sec-title">
-      <h2>缺失数据与 MAR 假设</h2>
-      <p class="sec-subtitle">MCAR、MAR、MNAR 三种缺失机制及其对推断的影响</p>
+      <h2>缺失数据、MAR 假设与敏感性分析</h2>
+      <p class="sec-subtitle">MCAR、MAR、MNAR 三种缺失机制；MMRM 为何不生成填补值；J2R / CR 类敏感性分析</p>
       <div class="sec-chips">
         <span class="badge badge-accent">交互演示</span>
         <span class="badge badge-warning">MAR</span>
+        <span class="badge badge-accent">无填补</span>
+        <span class="badge badge-accent">J2R</span>
       </div>
     </div>
   </div>
@@ -1623,7 +1760,50 @@ code, kbd { font-family: var(--font-mono); font-size: 0.85em; background: var(--
     </div>
   </div>
 
-  <h3>6.2 缺失机制交互演示</h3>
+  <h3>6.2 MMRM 如何处理缺失：基于似然，无需插补</h3>
+  <div class="callout key">
+    <div class="callout-title">核心结论</div>
+    在 MAR 假设成立的前提下，MMRM <strong>直接基于全部已观测数据构造似然</strong>，即可给出固定效应的<strong>无偏估计</strong>与<strong>有效的统计推断</strong>，<strong>无需对缺失值进行插补</strong>。缺失访视既不删除、也不填补，而是通过协方差结构 $V$ 把每位受试者实际观测到的那部分访视纳入贡献。
+  </div>
+
+  <p>这句话包含四个要点，每一条都对应一个具体的建模或编程动作：</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>要点</th><th>统计含义</th><th>对编程与申报的含义</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>不删除</strong></td>
+          <td>受试者只要还有至少一次有效观测，其已观测部分就进入似然</td>
+          <td>不需要按「完成全部访视」筛选分析集；脱落者的数据仍被利用</td>
+        </tr>
+        <tr>
+          <td><strong>不插补</strong></td>
+          <td>缺失值从不进入残差向量，也就不存在「补出来的信息」</td>
+          <td>不需要 LOCF、BOCF、WOCF、MI 等前置步骤；治疗差值由模型直接估计</td>
+        </tr>
+        <tr>
+          <td><strong>无偏</strong></td>
+          <td>MAR 且模型正确设定时，$E(\hat{\boldsymbol\beta})=\boldsymbol\beta$</td>
+          <td>偏倚来源是 MAR 被违背或协方差结构误设，而不是「没有插补」</td>
+        </tr>
+        <tr>
+          <td><strong>有效</strong></td>
+          <td>$\operatorname{Var}(\hat{\boldsymbol\beta})=(X'V^{-1}X)^{-1}$ 达到该信息下的下界；配合 Kenward-Roger 调整后，SE、DF、置信区间与 P 值在小样本下仍是校准的</td>
+          <td>必须正确指定 <code>TYPE=</code> 与 <code>DDFM=KR</code>，否则「有效」不成立</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>之所以成立，关键在于 <strong>$V$ 是按每位受试者实际观测到的访视取子块</strong>：第 $i$ 名受试者贡献的似然只涉及 $V_i$ 中对应的行与列，缺失访视对应的行列被直接划掉，而不必先猜一个值填进去。因此 MMRM 与「先插补再分析」是两条不同的技术路线——后者人为增加了信息量，会低估不确定性，通常导致标准误偏小、P 值偏小。</p>
+
+  <div class="callout warn">
+    <div class="callout-title">边界条件不要省</div>
+    「无需插补」依赖两个前提：<strong>MAR 成立</strong>与<strong>协方差结构基本正确</strong>。若怀疑 MNAR，正确做法不是改用插补来「补救」，而是按 ICH E9(R1) 做<strong>敏感性分析</strong>（如基于 delta 的调整、对照组多重插补、jump-to-reference、基于 retrieved dropout 的建模），并把结果写入敏感性分析章节，与主分析并列呈现。
+  </div>
+
+  <h3>6.3 缺失机制交互演示</h3>
   <p>观察不同缺失机制下数据点的缺失模式差异：</p>
   <div class="missing-demo" id="missingDemo">
     <h4> 缺失数据机制散点图</h4>
@@ -1647,6 +1827,251 @@ code, kbd { font-family: var(--font-mono); font-size: 0.85em; background: var(--
     <div class="callout-title">MMRM 为什么在 MAR 下有效？</div>
     MMRM 使用基于似然的方法（REML），在 MAR 假设下，似然函数只依赖于观测数据。只要模型正确指定了均值结构和协方差结构，MMRM 就能给出无偏的固定效应估计和有效的统计推断 —— <strong>无需插补缺失值</strong>。
   </div>
+
+  <h3>6.4 MMRM 不会生成单次填补值</h3>
+
+  <div class="callout key">
+    <div class="callout-title">一句话结论</div>
+    MMRM <strong>不使用单次填补值</strong>。对于缺失访视，模型不会先生成一个确定的"填补值"再把它当作观测纳入分析；缺失访视的结局<strong>不会被写回分析数据集</strong>，访视别 LSMean 也<strong>不是</strong>某一例缺失受试者的预测值。
+  </div>
+
+  <p>这句话容易在程序复核时被忽略。把"无填补"拆成三个可核查的命题：</p>
+
+  <div class="step-cards">
+    <div class="step-card">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>不写回 ADaM</h4>
+        <p>若某受试者没有 W16 的 <code>CHG</code>，MMRM <strong>不会</strong>在 <code>ADQS</code> 里新增一条"填补后的 W16"。分析数据集在 <code>PROC MIXED</code> 前后没有任何行被写入缺失访视的结局值。</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>LSMean 不是个体预测值</h4>
+        <p>W16 的 LSMean 是<strong>治疗组平均轨迹</strong>在给定协变量下的边际均值，是组水平汇总量。把它读成"某例缺失 W16 的受试者大概是多少分"是概念错误。</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>不需要先知道缺失真值</h4>
+        <p>MMRM 的目标是估计<strong>治疗组、访视与协变量条件下的平均变化</strong>及组间差异。它不要求先知道每名受试者缺失访视的真实数值 —— 这是它与 LOCF / BOCF 最根本的分野。</p>
+      </div>
+    </div>
+  </div>
+
+  <p><strong>三种"缺失"在数据结构上不同，但都不会产生虚构的结局值：</strong></p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>缺失形态</th><th>在 ADaM 中的表现</th><th>进入似然的方式</th><th>常见误解</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>单调脱落</strong></td>
+          <td>W8 之后的记录整行不存在</td>
+          <td>W2、W4 的已观测结局照常进入，该受试者的 $V_i$ 只取 $\Sigma$ 中对应访视的子块</td>
+          <td>以为"整例被删除"（实际是完整病例法的行为，不是 MMRM 的）</td>
+        </tr>
+        <tr>
+          <td><strong>间歇缺失</strong></td>
+          <td>W6 记录存在，但 <code>AVAL</code> / <code>CHG</code> 缺失</td>
+          <td>该行不构成有效的因变量观测；其余访视照常进入</td>
+          <td>以为"被当成 0"或"被自动填补"</td>
+        </tr>
+        <tr>
+          <td><strong>基线缺失导致 CHG 缺失</strong></td>
+          <td><code>BASE</code> 缺失</td>
+          <td>该访视的 <code>CHG</code> 无法构造；若 <code>BASE</code> 同时是协变量，影响不止一个访视</td>
+          <td>以为只丢一个访视点</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>从似然的角度看（推导见 <a href="#s23">S23</a>）：每名受试者只按<strong>自己实际的观测访视</strong>提供信息，$V_i = Z_i \Sigma Z_i^\top + \sigma^2 I_{n_i}$ 中的 $n_i$ 因人而异。模型评估的是"在当前均值模型与协方差结构下，已观测到的结果与模型有多一致"，而不是"缺失值该填什么"。</p>
+
+  <div class="callout warn">
+    <div class="callout-title">"模型预测值"不等于填补值</div>
+    <code>OUTPUT OUT=pred PREDICTED=</code> 可以给出每个观测（含条件于随机效应的经验 Bayes 预测）的拟合值。它只能用于<strong>模型诊断与图形展示</strong>，不能回写为受试者的"真实结局"，更不能作为主分析的输入。一旦把预测值写回数据集再跑一次模型，就人为缩小了方差、破坏了 KR 自由度与 SE 的自洽性。
+  </div>
+
+  <p><strong>程序员可以核验的六项：</strong></p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>检查项</th><th>期望结果</th></tr></thead>
+      <tbody>
+        <tr><td>每名受试者每个访视是否最多一条目标记录</td><td>是；存在重复需回溯筛选逻辑</td></tr>
+        <tr><td>缺失是"整行不存在"还是"AVAL/CHG 缺失"</td><td>两者都要能区分并在缺失模式表中报告</td></tr>
+        <tr><td><code>BASE</code> 缺失是否导致 <code>CHG</code> 无法构造</td><td>需单独计数，不能混进"访视缺失"</td></tr>
+        <tr><td><code>WHERE</code> 条件是否误删了本应使用的已观测记录</td><td>逐条比对分析标志与筛选条件</td></tr>
+        <tr><td><code>PROC MIXED</code> 实际使用了多少受试者与多少非缺失结局</td><td>与 <code>Number of Observations Used</code> 一致</td></tr>
+        <tr><td>数据集中若出现填补变量</td><td>必须能在 SAP 中找到明确依据（如 MI 的 <code>_Imputation_</code>）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout note">
+    <div class="callout-title">本例实测</div>
+    <code>Number of Observations Read = 80</code>、<code>Used = 80</code>、<code>Not Used = 0</code>。这不是"没有缺失" —— 36 例受试者 × 5 个计划访视 = 180 个计划观测，实际只有 <strong>80 个非缺失 <code>CHG</code></strong> 进入模型（缺失率约 55.6%）。<code>Read = Used</code> 只说明分析数据集已按"<code>CHG</code> 非缺失"筛选完毕，缺失访视根本没有进入数据集，谈不上被填补。
+  </div>
+
+  <h3>6.5 为什么 MAR 主分析之外仍需敏感性分析</h3>
+
+  <p>MMRM 在 MAR 下能给出无偏估计与有效推断，<strong>但这不等于 MNAR 风险已经消失</strong>。关键在于：</p>
+
+  <div class="callout danger-callout">
+    <div class="callout-title">MAR 无法仅凭观察数据证明</div>
+    如果受试者退出的原因与<strong>尚未观测到的</strong>结局直接相关，即使已调整基线与既往观测，缺失仍然携带未观察结局的信息 —— 这就是 MNAR 方向的担忧。MAR 与 MNAR 的区分<strong>不能只靠当前观察数据完成</strong>：分析人员可以描述缺失模式和退出原因，但不能仅凭日志或缺失比例宣布"数据符合 MAR"。
+  </div>
+
+  <p>因此 ICH E9(R1) 要求：缺失数据的处理必须相对于<strong>具体的 estimand</strong> 来定义，并用<strong>预先设定的敏感性分析</strong>检验主分析对关键假设偏离是否稳健。主分析与敏感性分析面向同一 estimand，通过改变"缺失结局的假设"来观察结论是否稳定。</p>
+
+  <p><strong>常见的参考组敏感性分析策略：</strong></p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>策略</th><th>对缺失部分的假设</th><th>直观解释</th></tr></thead>
+      <tbody>
+        <tr><td><strong>J2R</strong><br>Jump to Reference</td><td>脱落前沿用本治疗组轨迹；从脱落后的<strong>下一个访视</strong>开始，结果跳向参考组轨迹</td><td>"治疗有效，但退出后获益立即消失"</td></tr>
+        <tr><td><strong>CR</strong><br>Copy Reference</td><td>缺失部分按参考组的<strong>整体均值与协方差分布</strong>构造</td><td>"缺失部分遵循参考组的完整纵向行为"</td></tr>
+        <tr><td><strong>CIR</strong><br>Copy Increments in Reference</td><td>保留受试者脱落时的治疗组水平，之后复制参考组的<strong>变化增量</strong></td><td>"退出后不再获益，但也不倒退到入组状态"</td></tr>
+        <tr><td><strong>Tipping Point</strong></td><td>逐步改变缺失结局的假设（如逐次平移惩罚量）</td><td>"结论在什么程度的偏离下会翻转"</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p><strong>J2R 与 CR 的概念差异</strong>（假设某受试者在 W6 后退出，安慰剂组为参考组）：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>比较点</th><th>J2R</th><th>CR</th></tr></thead>
+      <tbody>
+        <tr><td>脱落前的已观察数据</td><td colspan="2">均保留并使用，已观察值<strong>不会被重写</strong></td></tr>
+        <tr><td>脱落后的假设</td><td>从下一个访视起，缺失结果按"跳转至参考组"的条件分布生成</td><td>假想的完整纵向分布按参考组结构设定，再结合已观察数据生成缺失部分</td></tr>
+        <tr><td>直观解释</td><td>治疗获益在退出后立即消失</td><td>缺失部分按参考组的完整纵向行为处理</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-title">缩写不等于实现细节</div>
+    J2R、CR、CIR 通常通过<strong>参考组多重插补</strong>实现，缺失值的条件分布仍会结合受试者已观察到的历史结果。但"J2R"这个缩写<strong>不唯一确定</strong>插补模型的形式、参考组的定义方式、以及是否调整协变量。实现细节必须查 SAP 与统计师的定义，<strong>不能只凭缩写判断</strong>。
+  </div>
+
+  <h3>6.6 MNAR 敏感性分析的生产实现：两段式 MI + 参考组填补</h3>
+
+  <p>下面这段代码取自<strong>另一份真实 SAP（文中统称 STUDY-XX-202）</strong>，是"MMRM 主分析 + MNAR 敏感性分析"配套写法中最典型的一种：<strong>先用 MAR 假设把间歇缺失补成单调缺失模式，再用参考组（control-based）FCS 在 MNAR 假设下补齐剩余的单调缺失</strong>。</p>
+
+  <p>先明确它挂在哪个 estimand 上 —— 这是程序员最容易搞混的地方：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Estimand</th><th>策略</th><th>主分析</th><th>敏感性分析</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>主估计量<br>（DAS28-CRP 较基线变化）</td>
+          <td>Hypothetical：ICE 之后的观测<strong>剔除</strong></td>
+          <td>MMRM（REML，MAR）</td>
+          <td>换用 IRT 分层因素替代 EDC 分层因素，模型其余不变</td>
+        </tr>
+        <tr>
+          <td>支持性估计量<br>（同一终点）</td>
+          <td>Treatment Policy：ICE 之后的观测<strong>保留</strong></td>
+          <td>同一 MMRM，纳入全部已观测数据</td>
+          <td><strong>MNAR 多重插补</strong>（下述两段式 MI）＋ Rubin 合并</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout note">
+    <div class="callout-title">为什么敏感性分析挂在支持性估计量下？</div>
+    主估计量（hypothetical）已经把 ICE 之后的数据剔除，其"缺失"主要是<strong>非 ICE 原因</strong>的缺失；而支持性估计量（treatment policy）要回答"即使发生 ICE 也照常用药会怎样"，此时停药导致的缺失带有明显的 MNAR 倾向，才需要用参考组插补去检验"若退出者不遵循 MAR，结论会怎样"。<strong>敏感性分析服务于哪个 estimand，必须先分清。</strong>
+  </div>
+
+  <p>SAP 中的示例程序（变量名与种子保留原样，研究号与药物代号已替换）：</p>
+  <div class="codeblock">
+    <div class="codeblock-header">
+      <span class="codeblock-lang">SAS · 第一段：MAR 下把间歇缺失补成单调缺失模式</span>
+      <button class="codeblock-copy">复制</button>
+    </div>
+    <pre><code>proc mi data=datain_wide
+        out=mi_mono
+        nimpute=100
+        seed=201101;
+  var TRT STRAT BASE V2 V4 V8 V12;
+  mcmc impute=monotone;
+run;
+
+proc sort data=mi_mono;
+  by _imputation_;
+run;</code></pre>
+  </div>
+
+  <div class="codeblock">
+    <div class="codeblock-header">
+      <span class="codeblock-lang">SAS · 第二段：MNAR 下用参考组 FCS 补齐单调缺失</span>
+      <button class="codeblock-copy">复制</button>
+    </div>
+    <pre><code>proc mi data=mi_mono
+        out=mi_fcs
+        nimpute=1
+        seed=201102;
+  by _imputation_;
+  class TRT STRAT;
+  var BASE STRAT TRT V2 V4 V8 V12;
+  fcs
+    reg( V2  = BASE STRAT TRT )
+    reg( V4  = BASE STRAT TRT V2 )
+    reg( V8  = BASE STRAT TRT V2 V4 )
+    reg( V12 = BASE STRAT TRT V2 V4 V8 );
+  mnar model ( V2 V4 V8 V12 / modelobs=(TRT='PBO') );
+run;</code></pre>
+  </div>
+
+  <p>随后对 <code>mi_fcs</code> 中每个 <code>_imputation_</code> 运行<strong>与主分析完全相同的 MMRM</strong>，用 <code>PROC MIANALYZE</code>（Rubin's rules）合并 100 组 LSMean 差值与 SE。</p>
+
+  <p><strong>逐行解读：</strong></p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>语句 / 选项</th><th>作用与必须注意的点</th></tr></thead>
+      <tbody>
+        <tr><td><code>nimpute=100</code>（第一段）</td><td>生成 100 个 MAR 填补集。数量需与 SAP 一致，不能随意改；缺失比例高时通常取 ≥50</td></tr>
+        <tr><td><code>mcmc impute=monotone</code></td><td>关键一步：先用 MCMC 把<strong>间歇缺失</strong>补上，人为造出<strong>单调缺失模式</strong>。FCS 的 MNAR 调整只对单调缺失有直接的序贯解释，所以必须先做这一步</td></tr>
+        <tr><td><code>seed=201101</code> / <code>201102</code></td><td>两段用<strong>不同但固定</strong>的种子，保证可复现。交付前必须确认种子已写死且与 SAP 一致</td></tr>
+        <tr><td><code>proc sort; by _imputation_;</code></td><td>第二段按 <code>_imputation_</code> 分组处理，<strong>必须先排序</strong>，否则 <code>by</code> 语句报"数据未按序排列"</td></tr>
+        <tr><td><code>nimpute=1</code>（第二段）</td><td>对每个已有的 MAR 填补集<strong>只补一次</strong>。总数 = 100 × 1 = 100，而不是 100×100。这是最常写错的地方</td></tr>
+        <tr><td><code>fcs reg( V4 = BASE STRAT TRT V2 )</code></td><td>序贯回归：每个访视条件于<strong>它之前的访视</strong>与协变量，顺序必须与访视时序一致（V2→V4→V8→V12）</td></tr>
+        <tr><td><code>mnar model( ... / modelobs=(TRT='PBO') )</code></td><td><strong>参考组定义的核心</strong>：用 <code>TRT='PBO'</code>（安慰剂组）的观测分布作为插补模型的来源，即"退出者的缺失部分按对照组的行为生成"。这正是 control-based / J2R 类思想的实现路径</td></tr>
+        <tr><td><code>var</code> 中必须含 <code>TRT</code>、<code>STRAT</code>、<code>BASE</code> 与各访视</td><td>SAP 明确要求插补模型包含治疗组、分层因素、基线与访视；漏掉任何一个都会改变插补分布，且难以在 QC 中发现</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-title">这段代码是"J2R"还是"CR"？</div>
+    严格说，<code>mnar model( ... / modelobs= )</code> 属于 <strong>control-based（参考组）插补</strong>的框架，J2R 与 CR 都在此框架下实现，具体是哪一个取决于缺失部分的条件均值与协方差如何设定。SAP 里若只写"采用 J2R"，程序员<strong>不能自行假定</strong> <code>modelobs=</code> 就是 J2R —— 必须向统计师确认：缺失部分是"从脱落点起跳向参考组轨迹"（J2R），还是"整个假想完整分布按参考组设定"（CR），以及是否需要 CIR 的增量形式。
+  </div>
+
+  <p><strong>报告与呈现的要求：</strong></p>
+  <ul>
+    <li>主分析与敏感性分析<strong>并列呈现</strong>在同一张表中（点估计、SE、CI、P 值四列对齐），让读者直接比较；</li>
+    <li>结论稳健性按 SAP 预先定义的标准判断，例如"主分析与敏感性分析方向一致且结论不变"；</li>
+    <li>若两者结论不一致，<strong>不能选择性报告</strong>，必须在 CSR 中说明差异来源（缺失率、退出原因分布、插补模型）；</li>
+    <li>二分类终点常用 NRI（non-responder imputation）处理缺失，那是<strong>另一套机制</strong>，不要与连续终点的 MNAR 插补混为一谈。</li>
+  </ul>
+
+  <div class="callout danger-callout">
+    <div class="callout-title">程序员不应自行决定的事项</div>
+    以下判断属于统计师与医学的职责，程序员的义务是<strong>把证据整理清楚并向上反馈</strong>，而不是为了让程序跑通就改变缺失处理策略：
+    <ul style="margin:8px 0 0 18px;">
+      <li>MAR 假设是否足够可信；</li>
+      <li>停药后收集到的结果如何对应 estimand；</li>
+      <li>主分析应采用 treatment policy、hypothetical 还是其他策略；</li>
+      <li>应使用 J2R、CR、CIR 还是 Tipping Point；</li>
+      <li>敏感性分析结果是否改变了临床结论。</li>
+    </ul>
+  </div>
+
 </section>
 
 <!-- ==========================================
@@ -1841,7 +2266,7 @@ RUN;</code></pre>
     <div class="sec-ghost">10</div>
     <div class="sec-title">
       <h2>协方差结构实验室</h2>
-      <p class="sec-subtitle">交互式比较 UN、CS、AR(1)、CSH、TOEP、ARH(1) —— 参数数、收敛风险、AIC/BIC</p>
+      <p class="sec-subtitle">交互式比较 UN、CS、AR(1)、CSH、TOEP、ARH(1)、SP(POW) —— 参数数、收敛风险、AIC/BIC</p>
       <div class="sec-chips">
         <span class="badge badge-accent">交互实验室</span>
         <span class="badge badge-warning">决策支持</span>
@@ -1917,6 +2342,9 @@ RUN;</code></pre>
           <option value="CS">CS</option>
           <option value="AR1">AR(1)</option>
           <option value="TOEP">TOEP</option>
+          <option value="CSH">CSH（异质 CS）</option>
+          <option value="ARH1">ARH(1)</option>
+          <option value="SPPOW">SP(POW)</option>
         </select>
       </div>
       <div class="sb-param-group">
@@ -1935,8 +2363,211 @@ RUN;</code></pre>
         </select>
       </div>
     </div>
-    <div class="sb-output" id="sbOutput"></div>
+    
+  <div class="un-param-panel" id="unParamPanel">
+    <div class="unp-head">
+      <h4 id="unpTitle">协方差参数数：公式与代入</h4>
+      <div class="unp-pick">
+        <span class="unp-sync">结构跟随上方「模型规格 · 协方差结构」</span>
+        <label for="unParamN">访视数 n</label>
+        <select id="unParamN">
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6" selected>6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="unp-body">
+      <div class="unp-left">
+        <div class="unp-formula">
+          <span class="fml" id="unpFml"></span>
+          <span class="fml-note" id="unpNote"></span>
+        </div>
+        <ol class="unp-steps" id="unpSteps"></ol>
+        <div class="unp-calc" id="unpCalc"></div>
+      </div>
+
+      <div class="unp-vis">
+        <div class="unp-grid" id="unpGrid"></div>
+        <div class="unp-cap" id="unpCap"></div>
+      </div>
+    </div>
+
+    <div class="unp-foot">
+      <table>
+        <thead>
+          <tr><th>结构</th><th>参数数公式</th><th>构成（n 个访视）</th><th>当前参数数</th><th>随 n 变化</th></tr>
+        </thead>
+        <tbody id="unpTableBody"></tbody>
+      </table>
+      <div class="unp-tip" id="unpTip"></div>
+    </div>
   </div>
+
+  <div class="sb-output" id="sbOutput"></div>
+  </div>
+
+  <h3>11.1 每个输出参数是怎么算出来的</h3>
+  <p>沙盘里切换的是「模型设置」，而输出表格里的每一个数字都有确定的计算路径。下表把 SAS 输出中的关键量、所用公式、输入数据与估计方法一一对应，便于逐项复核。</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>输出量</th><th>计算公式</th><th>输入数据</th><th>估计方法</th><th>可复核的中间结果</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>协方差参数 $\hat\theta$</strong><br><span style="font-size:12px;color:var(--ink-tertiary);">CovParms</span></td>
+          <td>最大化 REML 对数似然<br>$\ell_R(\theta)=-\tfrac12\big[\log|V|+\log|X'V^{-1}X|+r'V^{-1}r\big]$</td>
+          <td>$y$、$X$、受试者与访视索引</td>
+          <td>Fisher scoring / Newton-Raphson，收敛判据 ABSGCONV / PCONV</td>
+          <td>迭代史每一步的 −2RLL（S22 实例：567.614 → 545.711）</td>
+        </tr>
+        <tr>
+          <td><strong>固定效应 $\hat\beta$</strong><br><span style="font-size:12px;color:var(--ink-tertiary);">SolutionF</span></td>
+          <td>$\hat\beta=(X'\hat V^{-1}X)^{-1}X'\hat V^{-1}y$</td>
+          <td>$\hat V$（上一步）、$X$、$y$</td>
+          <td>GLS：给定 $\hat\theta$ 时的<strong>闭式解</strong>，无需迭代</td>
+          <td>$X'\hat V^{-1}X$（本例 11×11，rank = 11）、$X'\hat V^{-1}y$</td>
+        </tr>
+        <tr>
+          <td><strong>$\operatorname{Var}(\hat\beta)$</strong></td>
+          <td>$\widehat{\operatorname{Var}}(\hat\beta)=(X'\hat V^{-1}X)^{-1}$；KR 下再作调整得到 $\hat\Phi_A$</td>
+          <td>$(X'\hat V^{-1}X)^{-1}$、$\partial\hat V/\partial\hat\theta$、AsyCov$(\hat\theta)$</td>
+          <td>Kenward-Roger（Kackar–Harville 校正 + 尺度调整）</td>
+          <td>AsyCov 是否正定（奇异时 SAS 报 GINV，SE 不可信）</td>
+        </tr>
+        <tr>
+          <td><strong>LSMean</strong></td>
+          <td>$\ell'\hat\beta$，其中 $\ell$ 由「各分类水平等权平均」规则构造</td>
+          <td>$\hat\beta$、设计矩阵列名与水平顺序</td>
+          <td>可估函数的线性组合；<code>E</code> 选项可打印 $\ell$</td>
+          <td><code>E</code> 选项输出的系数向量（检验 $\ell$ 是否符合预期）</td>
+        </tr>
+        <tr>
+          <td><strong>SE(LSMean)</strong></td>
+          <td>$\sqrt{\ell'\hat\Phi_A\,\ell}$</td>
+          <td>同上，且使用 KR 调整后的协方差矩阵</td>
+          <td>KR / Satterthwaite / Between-Within</td>
+          <td>W16：8.9220（研究药物）、9.0975（安慰剂）</td>
+        </tr>
+        <tr>
+          <td><strong>治疗差值</strong><br><span style="font-size:12px;color:var(--ink-tertiary);">Diffs</span></td>
+          <td>$(\ell_1-\ell_2)'\hat\beta$ —— <strong>由模型直接估计</strong></td>
+          <td>同上</td>
+          <td>同上；<strong>不是两个 LSMean 事后相减</strong></td>
+          <td>W16：(−43.2597) − (−18.4896) = −24.7701<br><span style="font-size:12px;color:var(--ink-tertiary);">Diffs 表报 −24.7700，末位为显示舍入</span></td>
+        </tr>
+        <tr>
+          <td><strong>SE(差值)</strong></td>
+          <td>$\sqrt{(\ell_1-\ell_2)'\hat\Phi_A(\ell_1-\ell_2)}$<br>$=\sqrt{\operatorname{Var}_1+\operatorname{Var}_2-2\operatorname{Cov}_{12}}$</td>
+          <td>同上，<strong>含两者的协方差项</strong></td>
+          <td>同上</td>
+          <td>W16：12.7445；若误按独立计算则为 12.7423（本例两项几乎无关，差 0.017%）</td>
+        </tr>
+        <tr>
+          <td><strong>分母自由度 DF</strong></td>
+          <td>KR：$m=4+\dfrac{c+2}{c\rho-1}$，其中 $c$、$\rho$ 由 $\hat\Phi_A$ 与 $\hat V$ 的矩匹配给出</td>
+          <td>$\hat V$、$\hat\Phi_A$、$X$、$y$</td>
+          <td>Satterthwaite 型矩匹配（广义 Satterthwaite）</td>
+          <td>W16 差值 DF = 51.7；<strong>非整数是 KR 的常态</strong></td>
+        </tr>
+        <tr>
+          <td><strong>95% 置信区间</strong></td>
+          <td>$\hat\Delta\ \pm\ t_{0.975,\;DF}\times SE$</td>
+          <td>点估计、SE、DF</td>
+          <td>t 分布分位数</td>
+          <td>W16：−24.7700 ± 2.0071 × 12.7445 =（−50.35, 0.81）</td>
+        </tr>
+        <tr>
+          <td><strong>P 值</strong></td>
+          <td>$2\big[1-T_{DF}(|t|)\big]$，其中 $t=\hat\Delta/SE$</td>
+          <td>t 统计量、DF</td>
+          <td>t 分布尾概率</td>
+          <td>W16：$t=-1.94$，$p=0.0574$</td>
+        </tr>
+        <tr>
+          <td><strong>−2 Res Log Likelihood</strong></td>
+          <td>$\log|V|+\log|X'V^{-1}X|+r'V^{-1}r+(N-p)\log 2\pi$</td>
+          <td>$\hat V$、$\hat\beta$、残差、$N$、$p=\operatorname{rank}(X)$</td>
+          <td>REML；常数项口径须与 SAS 一致</td>
+          <td>本例 545.711</td>
+        </tr>
+        <tr>
+          <td><strong>AIC / AICC / BIC</strong></td>
+          <td>AIC $= -2RLL+2d$<br>AICC $= -2RLL+\dfrac{2dn}{n-d-1}$，$n=N-\operatorname{rank}(X)$<br>BIC $= -2RLL+d\ln(n_{\text{subj}})$</td>
+          <td>−2RLL、参数个数 $d$、以及<strong>三者的 $n$ 口径各不相同</strong></td>
+          <td>闭式代入</td>
+          <td>本例 $d=2$：549.7 / 549.9 / 552.9</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>11.2 关键中间结果：用 W16 差值做一次完整复核</h3>
+  <p>下面用 S22 那套真实输出（STUDY-XX-201 某亚组，CS 结构，DDFM=KR）把上表公式逐项算一遍。<strong>统计量数值未作改动，仅研究编号与治疗组代号已替换。</strong>你自己复核时，只要拿到 CovParms、LSMeans 与 Diffs 三张表就能重现以下全部数字。</p>
+
+  <h4>Step 1 · 协方差参数 → $V$ 的结构</h4>
+  <p>CS 结构下，$\hat V_i$ 的对角元是两个参数之和，非对角元为 CS 分量：</p>
+  <ul>
+    <li>$\operatorname{Var}$（对角）$= \widehat{CS}+\widehat{Residual}=73.2028+61.7798=134.9826$</li>
+    <li>$\operatorname{Cov}$（非对角）$= \widehat{CS}=73.2028$</li>
+    <li>隐含的组内相关 $= 73.2028\,/\,134.9826 = 0.5423$</li>
+  </ul>
+
+  <h4>Step 2 · LSMean 与治疗差值</h4>
+  <ul>
+    <li>研究药物 W16 LSMean $= -43.2597$（SE 8.9220，DF 48.7）</li>
+    <li>安慰剂 W16 LSMean $= -18.4896$（SE 9.0975，DF 53.1）</li>
+    <li>差值（研究药物 − 安慰剂）$= (-43.2597)-(-18.4896) = \mathbf{-24.7701}$，Diffs 表报 $\mathbf{-24.7700}$（末位舍入），两者一致</li>
+  </ul>
+  <p class="sec-note" style="color:var(--text-muted);font-size:13px;">注：早期版本此处引用过另一组 LSMean/SE 数值，来源为对纯文本输出的错误解析（列错位）。本版已按原始 <code>sashtml.htm</code> 的 <code>Least Squares Means</code> 与 <code>Differences of Least Squares Means</code> 两表逐格核对更正。</p>
+
+  <h4>Step 3 · SE(差值)：协方差项不能丢</h4>
+  <ul>
+    <li>$\operatorname{Var}_1 = 8.9220^2 = 79.6021$；$\operatorname{Var}_2 = 9.0975^2 = 82.7645$</li>
+    <li>$\operatorname{Var}(\text{diff}) = 12.7445^2 = 162.4223$</li>
+    <li>$2\operatorname{Cov}_{12} = 79.6021+82.7645-162.4223 = -0.0557 \Rightarrow \operatorname{Cov}_{12}=-0.0278$</li>
+    <li>$\operatorname{Corr}_{12} = -0.0278\,/\,(8.9220\times9.0975) = -0.0003$</li>
+  </ul>
+  <div class="callout danger-callout">
+    <div class="callout-title">这一步最容易做错</div>
+    本例的协方差项<strong>恰好接近 0</strong>（$\operatorname{Corr}_{12}=-0.0003$），所以误按两组独立计算得 $SE=\sqrt{79.6021+82.7645}=12.7423$，与模型的 12.7445 只差 <strong>0.017%</strong>，几乎看不出来。<br><br>
+    但<strong>这不能推广</strong>。两组 LSMean 之间的协方差取自 $(X'V^{-1}X)^{-1}$ 的相应分块：当两组样本量不平衡、缺失模式差异大、或协变量分布不同时，这一项可以相当可观，独立计算会明显偏离，且不再与 Type 3 检验和 KR 自由度自洽。<strong>正确做法始终是直接取 Diffs 表给出的 SE</strong>，不要自己用两个 SE 去拼。
+  </div>
+
+  <h4>Step 4 · t 值、置信区间与 P 值</h4>
+  <ul>
+    <li>$t = -24.7700\,/\,12.7445 = -1.9436$（SAS 显示 −1.94）</li>
+    <li>$t_{0.975,\,51.7} \approx 2.0071 \Rightarrow$ 边际误差 $= 2.0071\times12.7445 = 25.580$</li>
+    <li>95% CI $= (-24.7700-25.580,\ -24.7700+25.580) = (-50.35,\ 0.81)$；SAS 输出 $(-50.3478,\ 0.8077)$，差异仅来自分位数的四舍五入</li>
+    <li>$p = 2\big[1-T_{51.7}(1.9436)\big] = 0.0574$</li>
+  </ul>
+
+  <h4>Step 5 · 拟合统计量的 $n$ 口径</h4>
+  <p>已知 $N=80$，$\operatorname{rank}(X)=11$，$d=2$（CS），受试者数 $=36$，−2RLL $=545.711$：</p>
+  <ul>
+    <li>AIC $= 545.711 + 2\times2 = 549.711$（SAS 549.7）✓</li>
+    <li>AICC：$n = N-\operatorname{rank}(X)=80-11=69$，$\Rightarrow 545.711 + \dfrac{2\times2\times69}{69-2-1} = 545.711+4.1818 = 549.893$（SAS 549.9）✓</li>
+    <li>BIC：$545.711 + 2\times\ln 36 = 545.711 + 7.1670 = 552.878$（SAS 552.9）✓</li>
+  </ul>
+  <p>三者的 $n$ 不同：AIC 不用 $n$；AICC 用 $N-\operatorname{rank}(X)$；BIC 用<strong>受试者数</strong>。拿错口径就复现不出 SAS 的数字——这是自查时最容易卡住的地方。</p>
+
+  <h3>11.3 参数复核清单</h3>
+  <ol>
+    <li><strong>先对结构再看数字。</strong> CovParms 的参数个数是否等于该 TYPE= 的理论个数？出现 0、负值或贴边界，先回到 S24 排查。</li>
+    <li><strong>用 <code>E</code> 选项打印 $\ell$ 向量。</strong> 确认 LSMean / 差值确实用了你以为的那一组系数，尤其是有协变量或交互项时。</li>
+    <li><strong>差值必须来自 Diffs 表。</strong> 不要用取整后的两个 LSMean 相减；同样的道理，CI 与 P 值也必须用模型直接给出的 SE 与 DF 重算。</li>
+    <li><strong>检查 SE 与 Var 的自洽性。</strong> 用 Step 3 的式子反算 $\operatorname{Cov}_{12}$，若为负得不合常理，多半是 $\ell$ 向量或模型设定有问题。</li>
+    <li><strong>DF 非整数不是错。</strong> KR 的 $m$ 本来就是实数；但 DF 明显小于受试者数时要警觉单元格稀疏。</li>
+    <li><strong>用 AIC / AICC / BIC 反查 $n$ 口径。</strong> 三者能对上 SAS，说明 −2RLL 与 $d$ 都取对了。</li>
+    <li><strong>交叉验证。</strong> 条件允许时用另一套实现（如 R <code>mmrm</code> 或本指南的自研 REML 引擎）重跑同一模型，比对到小数点后 2–3 位。</li>
+  </ol>
+
 </section>
 
 <!-- ==========================================
@@ -2469,12 +3100,1436 @@ summary(fit)
 emmeans(fit, pairwise ~ TRTP | AVISIT)</code></pre>
   </div>
 
+</section>
+
+<!-- ==========================================
+     S20: MMRM 输出数据集结构：LSMESTIMATE / SLICE / STORE
+     ========================================== -->
+<section class="sec" id="s20">
+  <div class="sec-head">
+    <div class="sec-ghost">20</div>
+    <div class="sec-title">
+      <h2>MMRM 输出数据集结构：LSMESTIMATE、SLICE 与 STORE</h2>
+      <p class="sec-subtitle">ODS 表名由什么语句触发？每个数据集里有哪些字段？STORE 到底存了什么？</p>
+      <div class="sec-chips">
+        <span class="badge badge-accent">LSMESTIMATE</span>
+        <span class="badge badge-primary">SLICE</span>
+        <span class="badge badge-success">STORE / PLM</span>
+        <span class="badge badge-info">ODS</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>20.1 先分清三层数据的职责</h3>
+  <p>ODS 结果<strong>不宜直接改造成显示字符串</strong>。更稳妥的做法是分成三层，每层只承担一种责任：</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>层次</th><th>示例数据集</th><th>主要任务</th><th>是否允许格式化</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>模型结果层</strong></td><td><code>MMRM_LSMEANS</code>、<code>MMRM_DIFFS</code>、<code>MMRM_COVPARMS</code></td><td>原样保留 SAS 输出，含比较两端、完整精度</td><td>❌ 不做任何取整</td></tr>
+        <tr><td><strong>统计结果层</strong></td><td><code>W16_LSMEANS</code>、<code>W16_DIFFS</code>、<code>W16_RESULTS</code></td><td>筛选目标访视、统一差值方向、落实目标估计量</td><td>❌ 保留完整数值精度</td></tr>
+        <tr><td><strong>显示层</strong></td><td><code>TLF_DATA</code></td><td>按 shell 处理小数位、P 值字符串、空白与对照组留空</td><td>✅ 只在这一层格式化</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-title">最常见的返工来源</div>
+    把格式化提前到统计结果层，用已经四舍五入的 LSMean 重新相减得到"治疗差值"。这样做既引入显示精度误差，也无法恢复模型直接估计出来的 SE、DF、CI 和 P 值。<strong>差值必须由模型直接估计，不能事后相减。</strong>
+  </div>
+
+  
+  <div class="figframe">
+    <div class="figframe-bar">
+      <span>图 20-1 · ODS 输出的三层落地路径</span>
+      <span class="fig-hint">语句决定打开哪张表，STORE 存的是模型不是表</span>
+    </div>
+    <div class="odstrack">
+      <div class="ods-col">
+        <div class="ods-col-head">PROC MIXED 语句</div>
+        <div class="ods-item"><b>LSMEANS</b> … / DIFF=CTRL CL</div>
+        <div class="ods-item"><b>LSMESTIMATE</b> 对 LSMean 线性组合</div>
+        <div class="ods-item"><b>SLICE</b> 选项 / 独立语句</div>
+        <div class="ods-item"><b>STORE</b> out= 保存模型对象</div>
+      </div>
+      <div class="ods-arrow">→</div>
+      <div class="ods-col">
+        <div class="ods-col-head">ODS 输出表</div>
+        <div class="ods-item">LSMeans</div>
+        <div class="ods-item">Diffs（由 DIFF= 触发）</div>
+        <div class="ods-item">LSMEstimates / Slices</div>
+        <div class="ods-item">Item Store（二进制，非表）</div>
+      </div>
+      <div class="ods-arrow">→</div>
+      <div class="ods-col">
+        <div class="ods-col-head">落地数据集</div>
+        <div class="ods-item">ODS OUTPUT：保留完整精度</div>
+        <div class="ods-item">统计结果层：选访视、定方向</div>
+        <div class="ods-item">显示层：唯一允许取整</div>
+        <div class="ods-item">PROC PLM RESTORE 复用模型</div>
+      </div>
+    </div>
+    <div class="figframe-note">关键约束：治疗差值必须由模型直接估计，不能用取整后的两个 LSMean 相减。</div>
+  </div>
+
+  <h3>20.2 ODS 表名与触发语句对照</h3>
+  <p>SAS 官方文档的 ODS Table Names 表规定了"<strong>表名 ← 触发它的语句/选项</strong>"这一一对应关系。写 <code>ODS OUTPUT</code> 之前先确认触发条件，否则会得到空数据集或根本不生成：</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>ODS 表名</th><th>内容</th><th>触发语句 / 选项</th><th>MMRM 常用度</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>ModelInfo</code></td><td>模型信息（结构、方法、DDFM）</td><td>默认输出</td><td>★★★ QC 第一步</td></tr>
+        <tr><td><code>ClassLevels</code></td><td>分类变量水平与取值</td><td>默认输出</td><td>★★★ 查 USUBJID 数</td></tr>
+        <tr><td><code>Dimensions</code></td><td>协方差参数数、X 列数、受试者数</td><td>默认输出</td><td>★★★</td></tr>
+        <tr><td><code>NObs</code></td><td>读入 / 使用 / 未使用的观测数</td><td>默认输出</td><td>★★★</td></tr>
+        <tr><td><code>ConvergenceStatus</code></td><td>收敛状态与原因</td><td>默认输出</td><td>★★★ 自动化回退必用</td></tr>
+        <tr><td><code>IterHistory</code></td><td>迭代史</td><td>默认输出</td><td>★★</td></tr>
+        <tr><td><code>CovParms</code></td><td>协方差参数估计</td><td>默认输出</td><td>★★★</td></tr>
+        <tr><td><code>FitStatistics</code></td><td>−2RLL / AIC / AICC / BIC</td><td>默认输出</td><td>★★★ 结构比较</td></tr>
+        <tr><td><code>LRT</code></td><td>零模型似然比检验</td><td>默认输出</td><td>★</td></tr>
+        <tr><td><code>Tests3</code></td><td>Type 3 固定效应检验</td><td>默认输出</td><td>★★</td></tr>
+        <tr><td><code>SolutionF</code></td><td>固定效应解</td><td><code>MODEL / S</code>（SOLUTION）</td><td>★★</td></tr>
+        <tr><td><code>LSMeans</code></td><td>最小二乘均值</td><td><code>LSMEANS</code></td><td>★★★</td></tr>
+        <tr><td><code>Diffs</code></td><td>LSMean 两两差值</td><td><code>LSMEANS / DIFF</code>（或 <code>PDIFF</code>、<code>ADJUST=</code>）</td><td>★★★ 主要终点来源</td></tr>
+        <tr><td><code>LSMEstimates</code></td><td>LSMESTIMATE 语句的结果</td><td><code>LSMESTIMATE</code></td><td>★★★ 自定义对比</td></tr>
+        <tr><td><code>Estimates</code></td><td>ESTIMATE 语句的结果</td><td><code>ESTIMATE</code></td><td>★★</td></tr>
+        <tr><td><code>Contrasts</code></td><td>CONTRAST 语句的结果</td><td><code>CONTRAST</code></td><td>★★</td></tr>
+        <tr><td><code>Slices</code></td><td>Tests of Effect Slices（简单效应）</td><td><code>LSMEANS / SLICE=</code> <strong>或</strong> <code>SLICE</code> 语句</td><td>★★</td></tr>
+        <tr><td><code>Coef</code></td><td>L 矩阵系数（可估性核对）</td><td><code>E</code> 选项（MODEL/CONTRAST/ESTIMATE/LSMEANS）</td><td>★★★ 疑难排查</td></tr>
+        <tr><td><code>AsyCov</code></td><td>协方差参数的渐近协方差矩阵</td><td><code>PROC MIXED ASYCOV</code></td><td>★★ 诊断奇异</td></tr>
+        <tr><td><code>R</code> / <code>RCorr</code></td><td>R 矩阵块 / 相关阵</td><td><code>REPEATED / R</code>、<code>/ RCORR</code></td><td>★★</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout note">
+    <div class="callout-title">一个容易踩的空表陷阱</div>
+    <code>ods output Diffs=diffs;</code> 只有当 <code>LSMEANS</code> 语句里带了 <code>DIFF</code>（或 <code>PDIFF</code>、<code>ADJUST=</code>）时才会生成。只写 <code>lsmeans trtpn*avisitn / cl;</code> 不会有 Diffs。反过来，<code>ADJUST=</code> 会<strong>隐含请求 DIFF</strong>，此时 PROBT 已是调整后 P 值，不能当作名义 P 值使用。
+  </div>
+
+  <h3>20.3 LSMeans 与 Diffs 的字段</h3>
+  <p><strong>LSMeans</strong> 每行对应一个「治疗组 × 访视」单元的调整后均值：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>字段</th><th>含义</th><th>使用注意</th></tr></thead>
+      <tbody>
+        <tr><td><code>TRT01PN</code>, <code>AVISITN</code></td><td>该 LSMean 对应的治疗组与访视</td><td>合并键</td></tr>
+        <tr><td><code>Estimate</code></td><td>LSMean 本身</td><td><strong>不是</strong>该组该访视非缺失 CHG 的算术平均</td></tr>
+        <tr><td><code>StdErr</code>, <code>DF</code></td><td>标准误与自由度</td><td>DF 来自 DDFM=，非常数</td></tr>
+        <tr><td><code>Lower</code>, <code>Upper</code></td><td>LSMean 的置信限</td><td>需 <code>CL</code> 选项</td></tr>
+        <tr><td><code>Probt</code></td><td><strong>该 LSMean 与 0 比较</strong>的 P 值</td><td>❌ 不是组间比较 P 值</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p><strong>Diffs</strong> 每行是一条两两比较，端点字段带下划线：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>字段</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td><code>TRT01PN</code>, <code>AVISITN</code></td><td>比较的<strong>第一端</strong>（被减数和参照端）</td></tr>
+        <tr><td><code>_TRT01PN</code>, <code>_AVISITN</code></td><td>比较的<strong>第二端</strong>（减数）</td></tr>
+        <tr><td><code>Estimate</code></td><td>第一端 − 第二端</td></tr>
+        <tr><td><code>StdErr</code>, <code>DF</code>, <code>Lower</code>, <code>Upper</code>, <code>Probt</code></td><td>差值 SE、自由度、CI、P 值</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout danger-callout">
+    <div class="callout-title">只写 where avisitn=16 是不够的</div>
+    <code>where avisitn=16;</code> 只限定了<strong>第一端</strong>，第二端仍可能来自 W2、W4、W8 或 W12。访视内的组间比较必须同时限定两端：
+    <code>where avisitn=16 and _avisitn=16;</code>
+  </div>
+
+  <h3>20.4 LSMESTIMATE 语句：直接对 LSMean 做线性组合</h3>
+  <p>当 SAP 要求的估计量<strong>不是</strong>现成的某一条两两比较时（例如"两个剂量组合并后与安慰剂比较"、"某访视上若干单元格的平均"），用 <code>LSMESTIMATE</code> 直接写 LSMean 的系数最直观——它作用的单位是 <strong>LSMean</strong>，而不是固定效应参数 <code>β</code>。</p>
+
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="codeblock-lang">SAS</span><button class="codeblock-copy">复制</button></div>
+<pre><code>proc mixed data=adeff_ana method=reml cl;
+    class usubjid trt01pn(ref="1") avisitn;
+    model chg = base trt01pn avisitn trt01pn*avisitn / ddfm=kr solution;
+    repeated avisitn / subject=usubjid type=un;
+
+    /* LSMean 的水平顺序：avisitn 在外层、trt01pn 在内层，
+       即 (W2,T1)(W2,T4)(W4,T1)(W4,T4)... 共 10 个单元 */
+    lsmestimate trt01pn*avisitn
+        'W16: 研究药物 - 安慰剂'  0 0 0 0 0 0 0 0 -1 1,
+        'W12 与 W16 差值之差'     0 0 0 0 0 0 -1 1 1 -1
+        / cl divisor=1,1 joint e;
+    ods output LSMEstimates=lsm_est Coef=lsm_coef;
+run;</code></pre>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>选项</th><th>作用</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>逗号 <code>,</code></td><td>分隔多行（每行一个估计量）</td><td>每行独立出一条 t 检验</td></tr>
+        <tr><td><code>DIVISOR=</code></td><td>每行的除数</td><td>写"平均"时用，如 <code>divisor=2,1</code></td></tr>
+        <tr><td><code>CL</code></td><td>输出置信限</td><td>需配合 <code>PROC MIXED ... CL</code> 或 <code>ALPHA=</code></td></tr>
+        <tr><td><code>JOINT</code></td><td>对各行做<strong>联合 F 检验</strong></td><td>多行整体检验，而不是逐行 t 检验</td></tr>
+        <tr><td><code>E</code></td><td>打印 L 矩阵系数</td><td>核对系数是否落在预期的 LSMean 上</td></tr>
+        <tr><td><code>ADJUST=</code></td><td>多重比较调整</td><td>调整后 P 值，不要当名义 P 值用</td></tr>
+        <tr><td><code>AT</code> / <code>OM</code> / <code>BYLEVEL</code></td><td>改变协变量取值或边际权重</td><td>连续协变量取特定值时用 <code>AT</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>输出数据集 <code>LSMEstimates</code> 的常用字段：<code>Effect</code>（对应的 LSMEANS 效应）、<code>Label</code>（你写的行标签）、<code>Estimate</code>、<code>StdErr</code>、<code>DF</code>、<code>tValue</code>、<code>Probt</code>、<code>Alpha</code>、<code>Lower</code>、<code>Upper</code>。加了 <code>JOINT</code> 时还会额外输出联合检验（F 值与 NumDF/DenDF）。</p>
+
+  <div class="callout warn">
+    <div class="callout-title">系数顺序是最大的坑</div>
+    系数的书写顺序对应 <strong>LSMean 水平组合的字典序</strong>——由 CLASS 变量在效应中的排列与水平取值共同决定，和你在 <code>LSMEANS</code> 里"心里的顺序"不一定一致。写完后必须用 <code>E</code> 选项打印 <code>Coef</code> 表核对：若标签说"研究药物 − 安慰剂"但系数落在了别的单元格上，数值会和标签完全不符。<strong>先 E，后定稿。</strong>
+  </div>
+
+  <h3>20.5 SLICE：选项与语句的区别</h3>
+  <p>这是一个高频混淆点，先给结论：</p>
+
+  <div class="comparison-table">
+    <div class="comparison-card">
+      <h4>LSMEANS / SLICE=  （选项）</h4>
+      <ul>
+        <li>写在 <code>LSMEANS</code> 语句的斜杠后</li>
+        <li><code>lsmeans A*B / slice=B;</code></li>
+        <li>含义：按 B 的每个水平，分别检验 A 的<strong>简单主效应</strong></li>
+        <li>依赖该 <code>LSMEANS</code> 语句指定的效应</li>
+      </ul>
+    </div>
+    <div class="comparison-card">
+      <h4>SLICE 语句  （独立语句）</h4>
+      <ul>
+        <li>独立成句：<code>slice trt01pn*avisitn / sliceby=avisitn diff cl;</code></li>
+        <li>含义：对指定交互效应做分割分析</li>
+        <li>可带 <code>DIFF</code>（给出各层内差值）、<code>ADJUST=</code>、<code>CL</code></li>
+        <li>不依赖是否写过 <code>LSMEANS</code></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout key">
+    <div class="callout-title">需要澄清的一点</div>
+    <code>SLICE</code> 既是 <code>LSMEANS</code> 语句的<strong>选项</strong>，也是一个<strong>独立语句</strong>；而 <code>LSMESTIMATE</code> 语句<strong>不接受 SLICE 选项</strong>——它的选项是 <code>JOINT</code>、<code>ADJUST=</code>、<code>DIVISOR=</code>、<code>CL</code>、<code>E</code> 等。三者是并列关系，不是嵌套关系。
+  </div>
+
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="codeblock-lang">SAS</span><button class="codeblock-copy">复制</button></div>
+<pre><code>/* 写法一：LSMEANS 的 SLICE= 选项 */
+lsmeans trt01pn*avisitn / slice=avisitn cl;
+ods output Slices=slc_a LSMeans=lsm;
+
+/* 写法二：SLICE 语句（可额外要差值） */
+slice trt01pn*avisitn / sliceby=avisitn diff cl adjust=tukey;
+ods output Slices=slc_b;</code></pre>
+  </div>
+
+  <p>两者都会产出 <strong>ODS 表名 <code>Slices</code></strong>，输出标题为 <em>Tests of Effect Slices</em>。常用字段：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>字段</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td><code>Effect</code></td><td>被分割的交互效应，如 <code>TRT01PN*AVISITN</code></td></tr>
+        <tr><td><code>SliceBy</code> 水平变量</td><td>当前切片所在的层（如 <code>AVISITN=16</code>）</td></tr>
+        <tr><td><code>NumDF</code> / <code>DenDF</code></td><td>该层内简单效应的分子/分母自由度</td></tr>
+        <tr><td><code>FValue</code> / <code>ProbF</code></td><td><strong>F 检验</strong>，不是 t 检验</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout note">
+    <div class="callout-title">Slices 是 F 检验，不是"每组差值"</div>
+    <code>slice=avisitn</code> 回答的是"在 W16 这一层，治疗组之间<strong>整体上</strong>有没有差异"（2 组时为 1 个分子自由度）。它<strong>不给</strong>出"研究药物 − 安慰剂 = −24.77"这样的带符号差值。要拿差值，须加 <code>DIFF</code> 选项，或回到 <code>Diffs</code> / <code>LSMESTIMATE</code>。
+  </div>
+
+  <h3>20.6 STORE 语句：把模型存下来，交给 PROC PLM</h3>
+  <p><code>STORE</code> <strong>不产生任何输出表</strong>。它把分析上下文与结果写入一个二进制的 <strong>item store</strong>，之后由 <code>PROC PLM</code> 读取并做后处理——<strong>不需要重新拟合模型</strong>。对于跑一次要几十分钟的 UN 结构，这是最实在的省时手段。</p>
+
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="codeblock-lang">SAS</span><button class="codeblock-copy">复制</button></div>
+<pre><code>proc mixed data=adeff_ana method=reml cl;
+    class usubjid trt01pn(ref="1") avisitn;
+    model chg = base trt01pn avisitn trt01pn*avisitn / ddfm=kr solution;
+    repeated avisitn / subject=usubjid type=un;
+    lsmeans trt01pn*avisitn / cl;
+    store mmrm_store / label='W16 主分析 MMRM（UN, DDFM=KR）';
+run;
+
+/* 后续任意次后处理，都不再重跑模型 */
+proc plm restore=mmrm_store;
+    show cov parms;                       /* 查看 item store 内容 */
+    lsmeans trt01pn*avisitn / diff cl;    /* 继续用 KR 自由度 */
+    lsmestimate trt01pn*avisitn 'W16 diff' 0 0 0 0 0 0 0 0 -1 1 / cl;
+    slice trt01pn*avisitn / sliceby=avisitn diff;
+run;</code></pre>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>要点</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>RESTORE=</code></td><td>PROC PLM 读取 item store 的主选项（<code>SOURCE=</code> 亦可）</td></tr>
+        <tr><td>DDFM 会被保留</td><td>原拟合用了 <code>DDFM=KR</code>，PLM 后处理<strong>继续沿用 KR</strong>，不会退回默认</td></tr>
+        <tr><td>PLM 支持的语句</td><td><code>ESTIMATE</code>、<code>LSMEANS</code>、<code>LSMESTIMATE</code>、<code>SLICE</code>、<code>SCORE</code>、<code>SHOW</code>、<code>TEST</code>、<code>EFFECTPLOT</code>、<code>CODE</code>、<code>FILTER</code>、<code>WHERE</code></td></tr>
+        <tr><td>无 CLASS / MODEL</td><td>分类变量与模型信息都在 item store 里，PLM 里再写会报错</td></tr>
+        <tr><td>不可跨平台</td><td>item store 是二进制文件，Unix 上生成的不能在 Windows 上用</td></tr>
+        <tr><td>命名建议</td><td>带上结构与分析名，如 <code>store mmrm_un_w16;</code>，避免多结构探索时互相覆盖</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout tip">
+    <div class="callout-title">生产实践：一次拟合，多次取用</div>
+    典型用法是主分析程序里 <code>STORE</code>，然后在敏感性分析、亚组 TLF、附加列表程序里各自 <code>PROC PLM RESTORE=</code>。这样既保证<strong>    所有结果来自同一个拟合</strong>（避免不同程序各自重跑导致的细微差异），也省掉重复拟合的时间。
+  </div>
+</section>
+
+<!-- ==========================================
+     S21: DIFFs 怎么读：ESTIMATE vs CONTRAST vs LSMESTIMATE
+     ========================================== -->
+<section class="sec" id="s21">
+  <div class="sec-head">
+    <div class="sec-ghost">21</div>
+    <div class="sec-title">
+      <h2>DIFFs 怎么读：ESTIMATE / CONTRAST / LSMESTIMATE 三方对照</h2>
+      <p class="sec-subtitle">45 行 Diffs 里只有 5 行是访视内组间比较——剩下的 40 行是什么？</p>
+      <div class="sec-chips">
+        <span class="badge badge-accent">DIFFs</span>
+        <span class="badge badge-primary">ESTIMATE</span>
+        <span class="badge badge-success">CONTRAST</span>
+        <span class="badge badge-warning">LSMESTIMATE</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>21.1 DIFFs 的规模：为什么是 45 行</h3>
+  <p><code>LSMEANS effect / DIFF</code> 请求的是<strong>该效应全部水平组合之间、无重复的两两比较</strong>。若交互效应有 <em>k</em> 个单元格，Diffs 的行数就是组合数：</p>
+
+  <p style="text-align:center;font-size:19px;font-family:var(--font-serif);color:var(--primary);margin:22px 0">
+    $\text{行数} = \binom{k}{2} = \dfrac{k(k-1)}{2}$
+  </p>
+
+  <p>以本指南贯穿使用的真实 MMRM 输出为例：2 个治疗组 × 5 个访视 = <strong>10 个单元格</strong>，于是 Diffs 有</p>
+
+  <p style="text-align:center;font-size:19px;font-family:var(--font-serif);color:var(--primary);margin:22px 0">
+    $\binom{10}{2} = \dfrac{10\times 9}{2} = 45\ \text{行}$
+  </p>
+
+  <p>而这 45 行里，<strong>访视内</strong>的治疗组比较只有 5 行（每个访视 1 条）；其余 40 行是<strong>跨访视</strong>比较，例如「研究药物 W2 的 LSMean 减去安慰剂 W16 的 LSMean」，临床上通常没有解释意义。</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>类别</th><th>行数</th><th>示例</th><th>是否用于 TLF</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>访视内组间比较</td><td><strong>5</strong></td><td>W16 研究药物 − W16 安慰剂</td><td>✅ 主要终点</td></tr>
+        <tr><td>同组跨访视比较</td><td>10</td><td>安慰剂 W16 − 安慰剂 W2</td><td>❌</td></tr>
+        <tr><td>跨组跨访视比较</td><td>30</td><td>研究药物 W2 − 安慰剂 W16</td><td>❌</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout key">
+    <div class="callout-title">推广到常见设计</div>
+    3 个治疗组 × 6 个访视 = 18 个单元格 → $\binom{18}{2}=153$ 行 Diffs，而 TLF 真正需要的往往只有 <strong>2 条</strong>（两个剂量组各自对安慰剂、在目标访视）。筛选不是"删行"，而是把"模型能算的比较"限定为 SAP 定义的目标估计量。
+  </div>
+
+  <h3>21.2 差值方向由两端决定，反向时 CI 必须成套翻转</h3>
+  <p><code>Estimate</code> = 第一端 − 第二端。程序不应假定 ODS 一定按某个方向输出，稳妥做法是<strong>同时接受两个方向再统一</strong>：</p>
+
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="codeblock-lang">SAS</span><button class="codeblock-copy">复制</button></div>
+<pre><code>data w16_diffs;
+    set mmrm_diffs;
+    where avisitn=16 and _avisitn=16          /* 两端都锁在 W16 */
+      and (  (trt01pn in (4)   and _trt01pn=1)      /* 研究药物 - 安慰剂 */
+          or (_trt01pn in (4)  and trt01pn=1) );    /* 安慰剂 - 研究药物（反向） */
+    if trt01pn in (4) and _trt01pn=1 then do;
+        trtn=trt01pn; diff=estimate; lcl=lower; ucl=upper;
+    end;
+    else do;
+        trtn=_trt01pn; diff=-estimate; lcl=-upper; ucl=-lower;   /* 注意：上下限互换 */
+    end;
+    diff_se=stderr; diff_df=df; pvalue=probt;
+run;</code></pre>
+  </div>
+
+  <div class="callout danger-callout">
+    <div class="callout-title">反向时最容易写错的一行</div>
+    原 CI 为 $(0.940,\ 1.483)$，反向后应是 $(-1.483,\ -0.940)$：<strong>两个端点都取负，同时交换上下限</strong>，即 <code>lcl = -upper; ucl = -lower;</code>。写成 <code>lcl = -lower</code> 会得到"方向对但 CI 反"的低级错误。SE 不受方向影响，双侧 P 值也不变；<strong>单侧检验不能套用这个结论</strong>。
+  </div>
+
+  <h3>21.3 ESTIMATE / CONTRAST / LSMESTIMATE 三方对照</h3>
+  <p>三者的本质区别在于<strong>作用对象</strong>：<code>ESTIMATE</code> 与 <code>CONTRAST</code> 作用于<strong>固定效应参数 $\boldsymbol\beta$</strong>，<code>LSMESTIMATE</code> 作用于<strong>最小二乘均值</strong>。</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>维度</th><th>ESTIMATE</th><th>CONTRAST</th><th>LSMESTIMATE</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>作用对象</strong></td>
+          <td>固定效应参数 $\boldsymbol\beta$</td>
+          <td>固定效应参数 $\boldsymbol\beta$</td>
+          <td>LSMean（边际均值）</td>
+        </tr>
+        <tr>
+          <td><strong>返回内容</strong></td>
+          <td>标量估计值 + SE + CI + t 检验 P 值</td>
+          <td><strong>只有 F 检验</strong>（NumDF/DenDF/F/P），<strong>不给估计值</strong></td>
+          <td>标量估计值 + SE + CI + t 检验 P 值</td>
+        </tr>
+        <tr>
+          <td><strong>检验类型</strong></td>
+          <td>单自由度 t 检验</td>
+          <td>可多自由度 F 检验</td>
+          <td>单自由度 t 检验；<code>JOINT</code> 可做多自由度联合 F</td>
+        </tr>
+        <tr>
+          <td><strong>ODS 表名</strong></td>
+          <td><code>Estimates</code></td>
+          <td><code>Contrasts</code></td>
+          <td><code>LSMEstimates</code></td>
+        </tr>
+        <tr>
+          <td><strong>系数书写</strong></td>
+          <td>按效应/水平写 $\beta$ 的系数，需清楚参数化与参考水平</td>
+          <td>同左</td>
+          <td>按 LSMean 的水平组合写，<strong>与 $\beta$ 的参数化无关</strong></td>
+        </tr>
+        <tr>
+          <td><strong>受参考水平影响</strong></td>
+          <td>是，强依赖</td>
+          <td>是（但可估的对比结果与参数化无关）</td>
+          <td>否</td>
+        </tr>
+        <tr>
+          <td><strong>不可估时</strong></td>
+          <td>输出 <code>Non-est</code></td>
+          <td>输出 <code>Non-est</code></td>
+          <td>输出 <code>Non-est</code></td>
+        </tr>
+        <tr>
+          <td><strong>与 DIFF 的关系</strong></td>
+          <td>可复现某条 Diffs 行</td>
+          <td>单自由度时 F = t²，P 值相同</td>
+          <td>可复现某条 Diffs 行，且写法最贴近 TLF 语言</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>21.4 同一个 W16 差值的三种写法</h3>
+  <p>目标估计量固定为：W16 时「研究药物 − 安慰剂」的 LSMean 差值。模型为 <code>CHG = BASE TRT01PN AVISITN TRT01PN*AVISITN</code>，<code>trt01pn(ref="1")</code>、AVISITN 参考水平为 16。</p>
+
+  <div class="comparison-table">
+    <div class="comparison-card">
+      <h4>① ESTIMATE：直接写 β 的系数</h4>
+      <div class="codeblock" style="margin:10px 0">
+        <pre><code>estimate 'W16 diff'
+    trt01pn 1 -1
+    trt01pn*avisitn
+        0 0 0 0 0 0 0 0 1 -1
+    / cl;</code></pre>
+      </div>
+      <p style="font-size:14px;margin:0">交互项系数必须严格按水平组合顺序写。<strong>写错一个位置就会得到完全无关的量，且不会报错。</strong></p>
+    </div>
+    <div class="comparison-card">
+      <h4>② CONTRAST：只给 F 检验</h4>
+      <div class="codeblock" style="margin:10px 0">
+        <pre><code>contrast 'W16 diff'
+    trt01pn 1 -1
+    trt01pn*avisitn
+        0 0 0 0 0 0 0 0 1 -1;</code></pre>
+      </div>
+      <p style="font-size:14px;margin:0">得到 NumDF=1 的 F 检验，$F = t^2$，P 值与 ESTIMATE 相同；但<strong>拿不到 −24.77 这个估计值和它的 CI</strong>。</p>
+    </div>
+    <div class="comparison-card">
+      <h4>③ LSMESTIMATE：写 LSMean 的系数</h4>
+      <div class="codeblock" style="margin:10px 0">
+        <pre><code>lsmestimate trt01pn*avisitn
+    'W16 diff' 0 0 0 0 0 0 0 0 -1 1
+    / cl e;</code></pre>
+      </div>
+      <p style="font-size:14px;margin:0">语义就是"第 10 个单元格减第 9 个单元格"，与 TLF 语言一致；加 <code>E</code> 可核对系数落点。<strong>推荐首选。</strong></p>
+    </div>
+  </div>
+
+  <div class="callout tip">
+    <div class="callout-title">为什么推荐 LSMESTIMATE</div>
+    含 <code>TRT01PN*AVISITN</code> 交互时，<code>ESTIMATE</code> 要同时写主效应和交互项的系数，位置依赖 CLASS 水平顺序，是统计编程里最典型的静默错误来源。<code>LSMESTIMATE</code> 把问题从"β 的第几个元素"翻译成"第几个单元格"，后者可以用 <code>E</code> 选项直接打印出来核对。
+  </div>
+
+  <h3>21.5 各自适用场景</h3>
+  <div class="step-cards">
+    <div class="step-card">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>标准两两比较 → 用 DIFF</h4>
+        <p>SAP 要的就是"某访视上 A − B"，直接用 <code>LSMEANS / DIFF</code> 并从 <code>Diffs</code> 里筛选。不要为了"看起来专业"改用 ESTIMATE 重写一遍——多一次手写系数就多一次出错机会。</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>只要整体 P 值 → 用 CONTRAST</h4>
+        <p>交互项整体检验、多个水平合并检验、剂量趋势的正交多项式对比等<strong>多自由度</strong>场合。若只关心"是否显著"而不关心效应量，<code>CONTRAST</code> 最简洁。</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>自定义 LSMean 对比 → 用 LSMESTIMATE</h4>
+        <p>合并剂量组、跨访视平均、多个单元格的加权对比、SAP 明确写为"LSMean 的线性组合"的估计量。需要联合检验时加 <code>JOINT</code>。</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h4>需要与 SolutionF 对齐 → 用 ESTIMATE</h4>
+        <p>当统计师要求核对"某个固定效应系数"或做模型诊断时。但<strong>永远不要</strong>把 <code>SolutionF</code> 里的某行直接当作目标访视的治疗差值——参见 22.5 节的陷阱。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout note">
+    <div class="callout-title">不可估（Non-est）意味着什么</div>
+    三种写法都可能输出 <code>Non-est</code>。它表示所请求的线性组合<strong>不是 $\boldsymbol\beta$ 的可估函数</strong>——常见于某个治疗组在目标访视完全没有观测、或单元格缺失导致设计矩阵秩不足。此时应先检查单元格观测数，而不是调整系数"凑"出一个数值。
+  </div>
+</section>
+
+
+<!-- ==========================================
+     S22: 实跑示例：一份真实 MMRM 输出的逐表解读
+     ========================================== -->
+<section class="sec" id="s22">
+  <div class="sec-head">
+    <div class="sec-ghost">22</div>
+    <div class="sec-title">
+      <h2>实跑示例：一份真实 MMRM 输出的逐表解读</h2>
+      <p class="sec-subtitle">从 Model Information 一路读到 Diffs，再从统计量走到临床解读</p>
+      <div class="sec-chips">
+        <span class="badge badge-accent">PROC MIXED</span>
+        <span class="badge badge-primary">真实输出</span>
+        <span class="badge badge-success">独立复现</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout note">
+    <div class="callout-title">数据来源与掩蔽说明</div>
+    本节示例来自一项银屑病关节炎（PsA）II 期研究（下称 <strong>STUDY-XX-201</strong>）某亚组的 MMRM 分析输出。按合规要求，<strong>研究编号、药物代号、公司信息与受试者编号均已替换；所有统计量数值未作改动</strong>。为便于对照，另用一套独立实现的 REML 估计器在相同设计骨架的模拟数据上重跑，结果见 22.4。
+  </div>
+
+  <h3>22.1 分析背景</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>项目</th><th>内容</th></tr></thead>
+      <tbody>
+        <tr><td>适应症 / 分期</td><td>银屑病关节炎（PsA），II 期</td></tr>
+        <tr><td>终点</td><td>DAPSA 较基线变化（CHG），数值越低越好</td></tr>
+        <tr><td>分析访视</td><td>W2、W4、W8、W12、W16（目标访视 W16）</td></tr>
+        <tr><td>固定效应</td><td><code>CHG = BASE TRT01PN AVISITN TRT01PN*AVISITN</code></td></tr>
+        <tr><td>治疗组编码</td><td><code>TRT01PN=1</code> 安慰剂（参考水平），<code>TRT01PN=4</code> 研究药物</td></tr>
+        <tr><td>亚组处理</td><td>按 SAP 规定，<strong>亚组样本量小时不纳入分层因素</strong>，故本模型含 0 个分层变量</td></tr>
+        <tr><td>SAP 规定结构</td><td>UN；若不收敛则依次尝试 TOEPH(1) → ARH(1) → HCS → SP(POW) → CS，按 AIC 选</td></tr>
+        <tr><td>自由度</td><td><code>DDFM=KR</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>22.2 实际运行的程序</h3>
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="codeblock-lang">SAS</span><button class="codeblock-copy">复制</button></div>
+<pre><code>/* 0. 清理上一轮结果：避免不收敛时残留旧数据集被误用 */
+proc datasets lib=work nolist;
+    delete lsm diffs;
+quit;
+
+/* 1. 先探 UN 是否收敛（只要 ConvergenceStatus，不要结果表） */
+ods select none;
+ods output ConvergenceStatus=conv_un;
+proc mixed data=sub_ana(where=(chg>.)) method=reml;
+    class usubjid trt01pn avisitn;
+    model chg = base trt01pn avisitn trt01pn*avisitn / ddfm=kr residual;
+    repeated avisitn / subject=usubjid type=un;
+run;
+ods select all;
+
+/* 2. 若 UN 未收敛，遍历回退链，记录各结构 AIC */
+%let methlist=TOEPH|ARH(1)|CS|CSH|SP(POW)(avisitn_n);
+/*   …… 逐个 PROC MIXED，把 FitStatistics 中的 AIC 汇总到数据集 AIC …… */
+
+/* 3. 按 AIC 最小选定结构，重跑并取结果 */
+proc mixed data=sub_ana(where=(chg>.)) method=reml cl;
+    class usubjid avisitn trt01pn(ref="1");
+    model chg = base trt01pn avisitn trt01pn*avisitn / ddfm=kr solution;
+    repeated avisitn / subject=usubjid type=&amp;curr_type.;
+    lsmeans trt01pn*avisitn / pdiff cl;
+    ods output LSMeans=lsm Diffs=diffs ConvergenceStatus=conv;
+run;
+
+/* 4. 收敛判定：reason 必须正好是 "Convergence criteria met." */
+proc sql noprint;
+    select count(*) into :fail_cnt from conv
+    where reason ne "Convergence criteria met.";
+quit;</code></pre>
+  </div>
+
+  <div class="callout tip">
+    <div class="callout-title">两个值得抄走的工程细节</div>
+    <strong>① 先 delete 再跑。</strong>不收敛时 PROC MIXED 不会覆盖上一次的 <code>lsm</code>/<code>diffs</code>，残留数据会被下游当成有效结果。跑之前 <code>proc datasets delete</code> 是最便宜的保险。
+    <strong>② 用 reason 判定收敛。</strong>不要靠"日志里没有 ERROR"来判断；把 <code>ConvergenceStatus</code> 存下来，用 <code>reason ne "Convergence criteria met."</code> 精确判断。
+  </div>
+
+  <h3>22.3 逐表解读</h3>
+
+  <h4>① Model Information —— QC 第一步</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>条目</th><th>本例</th><th>要核对什么</th></tr></thead>
+      <tbody>
+        <tr><td>Covariance Structure</td><td><strong>Compound Symmetry</strong></td><td>是否等于 SAP 规定结构？若不是，回退是否被记录与批准？</td></tr>
+        <tr><td>Subject Effect</td><td>USUBJID</td><td>必须是受试者，不能是访视或中心</td></tr>
+        <tr><td>Estimation Method</td><td>REML</td><td>MMRM 标准选择</td></tr>
+        <tr><td>Residual Variance Method</td><td>Profile</td><td>SAS 默认；残差方差被 profile 掉</td></tr>
+        <tr><td>Fixed Effects SE Method</td><td>Kenward-Roger</td><td>与 SAP 一致</td></tr>
+        <tr><td>Degrees of Freedom Method</td><td>Kenward-Roger</td><td>与 DDFM= 一致</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><strong>本例的第一条结论：主结构 UN 没有收敛，程序按 SAP 回退链落到了 CS。</strong>这个事实必须在 QC 记录和 CSR 脚注中体现——"用的是什么结构"本身就是需要申报的信息。</p>
+
+  <h4>② Class Level Information —— 数清楚水平</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Class</th><th>Levels</th><th>Values</th><th>核对要点</th></tr></thead>
+      <tbody>
+        <tr><td>USUBJID</td><td><strong>36</strong></td><td>（已掩蔽）</td><td>是否等于分析中应有的受试者数</td></tr>
+        <tr><td>AVISITN</td><td>5</td><td>2 4 8 12 16</td><td>是否只含计划分析访视；顺序是否与 REPEATED 一致</td></tr>
+        <tr><td>TRT01PN</td><td>2</td><td>4 1</td><td>参考水平是否为安慰剂（本例用 <code>ref="1"</code> 显式指定）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>③ Dimensions —— 19 与 11 的差别</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>条目</th><th>本例</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>Covariance Parameters</td><td>2</td><td>CS + Residual</td></tr>
+        <tr><td><strong>Columns in X</strong></td><td><strong>19</strong></td><td>过参数化设计矩阵的<strong>列数</strong></td></tr>
+        <tr><td>Columns in Z</td><td>0</td><td>MMRM 无随机效应，Z 为空</td></tr>
+        <tr><td>Subjects</td><td>36</td><td>与 Class Levels 中 USUBJID 一致</td></tr>
+        <tr><td>Max Obs per Subject</td><td>5</td><td>最多 5 个基线后访视</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout key">
+    <div class="callout-title">Columns in X = 19，但可估参数只有 11</div>
+    SAS 采用 GLM 式过参数化：<br>
+    $1(\text{截距}) + 1(\text{BASE}) + 2(\text{TRT01PN}) + 5(\text{AVISITN}) + 10(\text{TRT01PN}\times\text{AVISITN}) = 19$ 列。<br>
+    但 $\mathrm{rank}(X) = 1+1+\underbrace{1}_{2-1}+\underbrace{4}_{5-1}+\underbrace{4}_{(2-1)(5-1)} = 11$。<br>
+    <strong>19 是列数，11 是可估参数个数。</strong>把它们混为一谈会导致对自由度和秩的误判。在 Solution for Fixed Effects 里你会看到 19 行，其中 8 行的 Estimate 恰好为 0（参考水平），它们<strong>不是</strong>"被估成 0"，而是参数化产生的冗余约束。
+  </div>
+
+  <h4>④ Number of Observations —— 缺失了多少</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>条目</th><th>数值</th></tr></thead>
+      <tbody>
+        <tr><td>Number of Observations Read</td><td>80</td></tr>
+        <tr><td>Number of Observations Used</td><td>80</td></tr>
+        <tr><td>Number of Observations Not Used</td><td>0</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>36 名受试者 × 5 个访视 = 180 个理论观测点，实际只有 <strong>80 条</strong>进入分析，缺失 <strong>100 条（55.6%）</strong>。<code>Read = Used</code> 且 <code>Not Used = 0</code> 说明没有因协变量缺失被剔除的记录。这个缺失比例解释了为什么 UN（15 个协方差参数）在此亚组上无法收敛。</p>
+
+  <h4>⑤ Iteration History —— 优化过程本身</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Iteration</th><th>Evaluations</th><th>−2 Res Log Like</th><th>Criterion</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>1</td><td>567.61403563</td><td>&nbsp;</td></tr>
+        <tr><td>1</td><td>2</td><td>550.09118611</td><td>0.01196918</td></tr>
+        <tr><td>2</td><td>1</td><td>546.88419942</td><td>0.00404797</td></tr>
+        <tr><td>3</td><td>1</td><td>545.86323984</td><td>0.00063691</td></tr>
+        <tr><td>4</td><td>1</td><td>545.71577334</td><td>0.00002074</td></tr>
+        <tr><td>5</td><td>1</td><td>545.71133083</td><td>0.00000003</td></tr>
+        <tr><td>6</td><td>1</td><td>545.71132552</td><td>0.00000000</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul>
+    <li>目标函数<strong>单调下降</strong>：567.61 → 545.71，共下降 21.90。</li>
+    <li>Criterion 是<strong>基于梯度的收敛判据</strong>（不是相邻两次目标函数的差），从 0.012 一路降到 $3\times10^{-8}$。</li>
+    <li>Iteration 1 的 Evaluations = 2：这一步做了线搜索（步长折半），所以多算了一次似然。</li>
+    <li>判读要点：<strong>下降是否平稳</strong>。若出现反复震荡、或目标函数在最后几步仍在明显变化，即使打了"Convergence criteria met"也要警惕。</li>
+  </ul>
+
+  <h4>⑥ Covariance Parameter Estimates —— 方差成分</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Cov Parm</th><th>Subject</th><th>Estimate</th><th>Lower</th><th>Upper</th></tr></thead>
+      <tbody>
+        <tr><td>CS</td><td>USUBJID</td><td><strong>73.2028</strong></td><td>24.1387</td><td>122.27</td></tr>
+        <tr><td>Residual</td><td>&nbsp;</td><td><strong>61.7798</strong></td><td>41.8791</td><td>100.26</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>CS 结构的含义是 $\Sigma = \sigma_{cs}\,J + \sigma^2_e\,I$，因此：</p>
+  <ul>
+    <li>各访视方差 $= 73.2028 + 61.7798 = 134.9826$，即 <strong>SD = 11.62</strong></li>
+    <li>组内相关系数（ICC）$= \dfrac{73.2028}{134.9826} = \mathbf{0.5423}$</li>
+    <li>两条置信区间<strong>都不含 0</strong>，且 CS 的下限 24.14 远离 0，说明受试者内相关确实存在</li>
+  </ul>
+  <div class="callout note">
+    <div class="callout-title">CS 的置信区间为什么不对称？</div>
+    注意 CS 的 CI 是 $(24.1387,\ 122.27)$：下限距估计值 49.06，上限距估计值 49.07——基本对称；而 Residual 的 CI $(41.8791,\ 100.26)$ 下限距 19.90、上限距 38.48，<strong>明显不对称</strong>。这是因为 SAS 对协方差参数的置信限并非在原始尺度上做对称 Wald 区间，而是在<strong>变换后的尺度</strong>上构造再反变换回来。因此<strong>不要用 (Upper−Lower)/(2×1.96) 去反推标准误</strong>——要标准误应另取渐近协方差矩阵（<code>ASYCOV</code> 选项）。
+  </div>
+
+  <h4>⑦ Fit Statistics 与 Null Model LRT —— 三个指标用了三个不同的 n</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>指标</th><th>数值</th><th>公式</th><th>SAS 用的 n</th><th>验算</th></tr></thead>
+      <tbody>
+        <tr><td>−2 Res Log Likelihood</td><td>545.7</td><td>$-\,2\ell_R$</td><td>—</td><td>545.7113</td></tr>
+        <tr><td>AIC</td><td>549.7</td><td>$-2\ell_R + 2d$</td><td>不涉及 n</td><td>$545.7113+2\times2=549.71$ ✓</td></tr>
+        <tr><td>AICC</td><td>549.9</td><td>$-2\ell_R + \dfrac{2dn}{n-d-1}$</td><td>$n = N - \mathrm{rank}(X) = 80-11 = \mathbf{69}$</td><td>$545.7113+\frac{4\times69}{66}=549.89$ ✓</td></tr>
+        <tr><td>BIC</td><td>552.9</td><td>$-2\ell_R + d\log n$</td><td>$n = \text{有效受试者数} = \mathbf{36}$</td><td>$545.7113+2\ln36=552.88$ ✓</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout danger-callout">
+    <div class="callout-title">这是本指南最值得记住的一个坑</div>
+    SAS 文档明确规定：对于 REML，<strong>AICC 使用 SAS 6 口径的 n（观测数 − X 的秩）</strong>，而 <strong>BIC 使用 Dimensions 表中的"有效受试者数"</strong>，AIC 则完全不涉及 n。本例中三个 n 分别是 69、36、—。若在自研实现或跨软件复核时统一用一个 n，AIC/BIC 会对不上，且<strong>差值恰好落在容易被误认为"算错"的量级上</strong>。
+  </div>
+  <p><strong>Null Model Likelihood Ratio Test</strong>：DF = 1，$\chi^2$ = 21.90，$p < .0001$。它检验的是 $H_0:\ \sigma_{cs}=0$（即退化为独立残差）。1 个自由度、$\chi^2$ 显著，说明纳入受试者内相关是必要的。</p>
+
+  <h4>⑧ Solution for Fixed Effects（节选）</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Effect</th><th>水平</th><th>Estimate</th><th>Std Error</th><th>DF</th><th>t Value</th><th>Pr &gt; |t|</th></tr></thead>
+      <tbody>
+        <tr><td>Intercept</td><td>&nbsp;</td><td>−14.2569</td><td>10.1924</td><td>61.5</td><td>−1.40</td><td>0.1669</td></tr>
+        <tr><td>BASE</td><td>&nbsp;</td><td>−0.07101</td><td>0.07165</td><td>32.6</td><td>−0.99</td><td>0.3289</td></tr>
+        <tr><td><strong>TRT01PN</strong></td><td><strong>4</strong></td><td><strong>−24.7700</strong></td><td>12.7445</td><td>51.7</td><td>−1.94</td><td>0.0574</td></tr>
+        <tr><td>TRT01PN</td><td>1</td><td>0</td><td>.</td><td>.</td><td>.</td><td>.</td></tr>
+        <tr><td>AVISITN</td><td>2</td><td>15.0295</td><td>9.0873</td><td>45.1</td><td>1.65</td><td>0.1051</td></tr>
+        <tr><td>AVISITN</td><td>4</td><td>3.7690</td><td>9.1312</td><td>44.4</td><td>0.41</td><td>0.6818</td></tr>
+        <tr><td>AVISITN</td><td>8</td><td>−0.5560</td><td>9.2824</td><td>43.8</td><td>−0.06</td><td>0.9525</td></tr>
+        <tr><td>AVISITN</td><td>12</td><td>−13.0370</td><td>9.9697</td><td>42.5</td><td>−1.31</td><td>0.1980</td></tr>
+        <tr><td>AVISITN</td><td>16</td><td>0</td><td>.</td><td>.</td><td>.</td><td>.</td></tr>
+        <tr><td>AVISITN*TRT01PN</td><td>2, 4</td><td>22.9378</td><td>12.6925</td><td>45.5</td><td>1.81</td><td>0.0774</td></tr>
+        <tr><td>AVISITN*TRT01PN</td><td>4, 4</td><td>30.1374</td><td>12.7705</td><td>44.6</td><td>2.36</td><td>0.0227</td></tr>
+        <tr><td>AVISITN*TRT01PN</td><td>8, 4</td><td>23.9880</td><td>12.9249</td><td>44.1</td><td>1.86</td><td>0.0702</td></tr>
+        <tr><td>AVISITN*TRT01PN</td><td>12, 4</td><td>19.8786</td><td>13.8132</td><td>42.7</td><td>1.44</td><td>0.1574</td></tr>
+        <tr><td>AVISITN*TRT01PN</td><td>16, 4</td><td>0</td><td>.</td><td>.</td><td>.</td><td>.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>⑨ Type 3 Tests of Fixed Effects</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Effect</th><th>Num DF</th><th>Den DF</th><th>F Value</th><th>Pr &gt; F</th><th>解读</th></tr></thead>
+      <tbody>
+        <tr><td>BASE</td><td>1</td><td>32.6</td><td>0.98</td><td>0.3289</td><td>基线协变量无显著影响</td></tr>
+        <tr><td>TRT01PN</td><td>1</td><td>60.1</td><td>1.31</td><td>0.2568</td><td><strong>不是</strong>治疗主效应检验（见 22.5）</td></tr>
+        <tr><td>AVISITN</td><td>4</td><td>44.2</td><td>15.97</td><td>&lt;.0001</td><td>均值随访视显著变化</td></tr>
+        <tr><td>AVISITN*TRT01PN</td><td>4</td><td>45.4</td><td>1.73</td><td>0.1608</td><td>本亚组未见显著交互</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>⑩ Least Squares Means（10 行 = 2 组 × 5 访视）</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>AVISITN</th><th>TRT01PN</th><th>Estimate</th><th>Std Error</th><th>DF</th><th>t</th><th>Pr &gt; |t|</th><th>95% CI</th></tr></thead>
+      <tbody>
+        <tr><td>2</td><td>4</td><td>−5.2923</td><td>2.5115</td><td>50.6</td><td>−2.11</td><td>0.0401</td><td>(−10.3353, −0.2493)</td></tr>
+        <tr><td>2</td><td>1</td><td>−3.4601</td><td>3.2707</td><td>51.4</td><td>−1.06</td><td>0.2950</td><td>(−10.0250, 3.1047)</td></tr>
+        <tr><td>4</td><td>4</td><td>−9.3532</td><td>2.9722</td><td>62.8</td><td>−3.15</td><td>0.0025</td><td>(−15.2930, −3.4134)</td></tr>
+        <tr><td>4</td><td>1</td><td>−14.7206</td><td>3.8939</td><td>63.7</td><td>−3.78</td><td>0.0003</td><td>(−22.5004, −6.9409)</td></tr>
+        <tr><td>8</td><td>4</td><td>−19.8277</td><td>3.3417</td><td>68.1</td><td>−5.93</td><td>&lt;.0001</td><td>(−26.4958, −13.1597)</td></tr>
+        <tr><td>8</td><td>1</td><td>−19.0457</td><td>4.6371</td><td>69.0</td><td>−4.11</td><td>0.0001</td><td>(−28.2964, −9.7950)</td></tr>
+        <tr><td>12</td><td>4</td><td>−36.4181</td><td>5.4188</td><td>57.9</td><td>−6.72</td><td>&lt;.0001</td><td>(−47.2653, −25.5709)</td></tr>
+        <tr><td>12</td><td>1</td><td>−31.5267</td><td>6.7196</td><td>60.1</td><td>−4.69</td><td>&lt;.0001</td><td>(−44.9674, −18.0859)</td></tr>
+        <tr style="background:var(--accent-soft);font-weight:600"><td>16</td><td>4</td><td>−43.2597</td><td>8.9220</td><td>48.7</td><td>−4.85</td><td>&lt;.0001</td><td>(−61.1923, −25.3270)</td></tr>
+        <tr style="background:var(--accent-soft);font-weight:600"><td>16</td><td>1</td><td>−18.4896</td><td>9.0975</td><td>53.1</td><td>−2.03</td><td>0.0471</td><td>(−36.7361, −0.2431)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>注意 <code>Pr &gt; |t|</code> 这一列是<strong>该 LSMean 与 0 比较</strong>的 P 值（"该组的平均变化是否不为 0"），<strong>不是组间比较 P 值</strong>。想回答"研究药物是否优于安慰剂"，必须去 Diffs。</p>
+
+  <h4>⑪ Differences of Least Squares Means —— 45 行里只取 5 行</h4>
+  <p>如 21.1 所述，10 个单元格产生 $\binom{10}{2}=45$ 条比较。其中<strong>访视内</strong>的组间比较只有 5 条：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>访视</th><th>研究药物 − 安慰剂</th><th>SE</th><th>DF</th><th>t</th><th>Pr &gt; |t|</th><th>95% CI</th></tr></thead>
+      <tbody>
+        <tr><td>W2</td><td>−1.8322</td><td>4.0327</td><td>52.1</td><td>−0.45</td><td>0.6515</td><td>(−9.9241, 6.2597)</td></tr>
+        <tr><td>W4</td><td>5.3674</td><td>4.8771</td><td>64.4</td><td>1.10</td><td>0.2752</td><td>(−4.3746, 15.1095)</td></tr>
+        <tr><td>W8</td><td>−0.7820</td><td>5.7107</td><td>68.9</td><td>−0.14</td><td>0.8915</td><td>(−12.1747, 10.6106)</td></tr>
+        <tr><td>W12</td><td>−4.8915</td><td>8.6402</td><td>60.2</td><td>−0.57</td><td>0.5734</td><td>(−22.1734, 12.3904)</td></tr>
+        <tr style="background:var(--accent-soft);font-weight:600"><td>W16</td><td><strong>−24.7700</strong></td><td>12.7445</td><td>51.7</td><td>−1.94</td><td><strong>0.0574</strong></td><td>(−50.3478, 0.8077)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><strong>读结果的结论</strong>：W16 时研究药物相对安慰剂的 DAPSA 变化差值估计为 <strong>−24.77</strong>（负号方向有利于研究药物，因为 DAPSA 越低越好），95% CI 为 $(−50.35,\ 0.81)$ 跨过 0，双侧 $p=0.0574$。因此该亚组在 W16 <strong>未达到</strong> 0.05 水平的统计学显著性——但这是一个<strong>亚组分析</strong>，样本量小、缺失率高，本就不以支持确证性结论为目的。</p>
+  <div class="callout warn">
+    <div class="callout-title">注意 W16 的 SE 明显大于 W2</div>
+    W2 的 SE 是 4.03，W16 是 12.74，相差 3 倍。原因是 W16 的观测数大幅减少（脱落）+ 该访视的方差更大。这提醒我们：<strong>同一模型里不同访视的精度可以差很多</strong>，不能因为"用的是同一个模型"就假定各访视精度相同。
+  </div>
+
+  <h3>22.4 独立复现：自研 REML 估计器的交叉验证</h3>
+  <p>本机没有 SAS，为验证上述解读所依据的计算逻辑，我用 <code>numpy</code>/<code>scipy</code> 从零实现了一套 REML 估计器（解析 score 与 Fisher 信息、Fisher scoring 迭代、Kenward-Roger 校正），在<strong>相同设计骨架</strong>的模拟数据上重跑：36 名受试者、5 个访视、80 条观测、缺失率 55.6%，真实协方差参数就设为真实输出估计出的 CS=73.2028 / Residual=61.7798。</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>量</th><th>真实 SAS 输出</th><th>自研引擎独立实现</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>观测数 / 受试者数</td><td>80 / 36</td><td>80 / 36</td><td>设计一致</td></tr>
+        <tr><td>UN（15 参数）</td><td>未收敛（触发回退）</td><td><strong>too many likelihood evaluations</strong></td><td>同样失败 ✓</td></tr>
+        <tr><td>最终结构</td><td>CS</td><td>CS（AIC 427.26 → 552.00 最小）</td><td>一致 ✓</td></tr>
+        <tr><td>CS 估计</td><td>73.2028</td><td>76.4574</td><td>真值 73.2028，还原良好</td></tr>
+        <tr><td>Residual 估计</td><td>61.7798</td><td>60.4327</td><td>真值 61.7798</td></tr>
+        <tr><td>CS 渐近 SE</td><td>≈25（由 CI 反推）</td><td>28.3331</td><td>量级一致</td></tr>
+        <tr><td>Residual 渐近 SE</td><td>≈13.8（由 CI 反推）</td><td>14.0333</td><td>高度一致</td></tr>
+        <tr><td>−2 Res Log Like</td><td>545.7113</td><td>547.9963</td><td>不同数据实现，不可直接相等</td></tr>
+        <tr><td>AIC / AICC / BIC</td><td>549.7 / 549.9 / 552.9</td><td>552.00 / 552.18 / 555.16</td><td>同上，差约 2.3</td></tr>
+        <tr><td>W16 LSMean（研究药物）</td><td>−43.2597</td><td>−43.4670</td><td>模拟真值即取自此</td></tr>
+        <tr><td>W16 LSMean（安慰剂）</td><td>−18.4896</td><td>−19.3717</td><td>—</td></tr>
+        <tr><td><strong>W16 差值</strong></td><td><strong>−24.7700</strong></td><td><strong>−24.0952</strong></td><td>一致 ✓</td></tr>
+        <tr><td>Diffs 行数 / 访视内行数</td><td>45 / 5</td><td>45 / 5</td><td>组合数一致 ✓</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout note">
+    <div class="callout-title">引擎的三条自检（都通过了）</div>
+    <strong>① KR 实现：</strong>在均衡无缺失数据（60 受试者 × 5 访视）上，KR 调整后 SE 相对 model-based SE 的膨胀比为 <strong>1.0004</strong>，KR 自由度 57.65 对上"受试者数 − 组数 = 58"。<br>
+    <strong>② 信息矩阵：</strong>解析解 $\mathcal I$ 与数值 Hessian $\tfrac12\nabla^2(-2\ell_R)$ 最大相对偏差 4%（有限差分误差量级）。<br>
+    <strong>③ 尺度口径：</strong>补上常数项 $(N-p)\log 2\pi$ 后，−2RLL 与真实输出同量级（差 2.3，源于不同数据实现）。
+  </div>
+
+  <h3>22.5 三个必须记住的陷阱</h3>
+  <div class="step-cards">
+    <div class="step-card">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>TRT01PN 的系数恰好等于 W16 的差值——这是巧合，不是规律</h4>
+        <p>本例中 <code>TRT01PN 4</code> 的估计是 <strong>−24.7700</strong>，而 W16 的 Diffs 也是 <strong>−24.7700</strong>。完全相等的原因是：<strong>AVISITN 的参考水平是 16、TRT01PN 的参考水平是 1</strong>，于是"治疗主效应"这一项在代数上恰好就是"参考访视（W16）上的治疗差值"。<br><br>
+        一旦 <code>ref=</code> 改变、或改用其他参数化，这个等式立即失效。<strong>不要</strong>从 <code>SolutionF</code> 里抄一个系数当作目标访视的治疗差值。</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>Type 3 的 TRT01PN P 值不是"治疗是否有效"</h4>
+        <p>含交互项时，Type 3 的 <code>TRT01PN</code> 检验的是"在参考访视上治疗效应是否为 0"（或因参数化而异的某个特定对比），不是跨所有访视的整体治疗效应。本例 $p=0.2568$，而 W16 的差值 $p=0.0574$——两者回答的是不同问题。</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>不要把亚组结果当成确证性结论</h4>
+        <p>本亚组 36 例、缺失 55.6%、UN 无法收敛而回退到 CS。这些条件决定了它的定位是<strong>探索性/一致性考察</strong>。任何"某亚组显著/不显著"的表述都必须伴随样本量、缺失率和结构回退的说明。</p>
+      </div>
+    </div>
+  </div>
+
+  <h3>22.6 从统计量到临床解读：−24.77 到底意味着什么</h3>
+
+  <p>把 LSMean 差值读成结论，需要三步，缺一步就会出错。下面用本例真实的访视别差值走一遍。</p>
+
+  <div class="path-steps">
+    <div class="path-step"><strong>第一步 · 方向</strong>：先确认终点是"越低越好"还是"越高越好"，再看差值的符号指向哪一侧。</div>
+    <div class="path-arrow">→</div>
+    <div class="path-step"><strong>第二步 · 幅度</strong>：把点估计与<strong>预先规定的临床重要差异界值</strong>比较，而不只是与 0 比较。</div>
+    <div class="path-arrow">→</div>
+    <div class="path-step"><strong>第三步 · 稳健性</strong>：看 CI 宽度、缺失率、结构回退与敏感性分析，判断这个估计有多"脆"。</div>
+  </div>
+
+  <h4 style="margin-top:22px;">访视别差值：真实的完整轨迹</h4>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>访视</th><th>研究药物 LSMean</th><th>安慰剂 LSMean</th><th>差值（药物 − 安慰剂）</th><th>SE</th><th>DF</th><th>95% CI</th><th>P</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>W2</td><td>−5.2923</td><td>−3.4601</td><td><strong>−1.8322</strong></td><td>4.0327</td><td>52.1</td><td>(−9.92, 6.26)</td><td>0.6515</td></tr>
+        <tr><td>W4</td><td>−9.3532</td><td>−14.7206</td><td><strong>+5.3674</strong></td><td>4.8771</td><td>64.4</td><td>(−4.37, 15.11)</td><td>0.2752</td></tr>
+        <tr><td>W8</td><td>−19.8277</td><td>−19.0457</td><td><strong>−0.7820</strong></td><td>5.7107</td><td>68.9</td><td>(−12.17, 10.61)</td><td>0.8915</td></tr>
+        <tr><td>W12</td><td>−36.4181</td><td>−31.5267</td><td><strong>−4.8915</strong></td><td>8.6402</td><td>60.2</td><td>(−22.17, 12.39)</td><td>0.5734</td></tr>
+        <tr><td>W16</td><td>−43.2597</td><td>−18.4896</td><td><strong>−24.7700</strong></td><td>12.7445</td><td>51.7</td><td>(−50.35, 0.81)</td><td>0.0574</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="sec-note" style="color:var(--text-muted);font-size:13px;">终点为 DAPSA 较基线变化，<strong>数值越低越好</strong>，因此负值表示研究药物组改善更多。数据来源：<code>Differences of Least Squares Means</code>，同访视 <code>TRT01PN=4</code> 减 <code>TRT01PN=1</code>。</p>
+
+  <h4 style="margin-top:22px;">轨迹能读出什么（以及不能读出什么）</h4>
+  <div class="step-cards">
+    <div class="step-card">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>分离主要发生在 W12 之后，且来自安慰剂组回退</h4>
+        <p>研究药物组从 W12 的 −36.4181 继续改善到 W16 的 −43.2597（再降 <strong>6.84</strong>）；安慰剂组却从 −31.5267 反弹到 −18.4896（<strong>回退 13.04</strong>）。W16 的组间差距，很大程度上是安慰剂组<strong>失去已获得的改善</strong>造成的，而不是研究药物组在后段"额外发力"。</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>W4 的反向信号不应过度解读</h4>
+        <p>W4 差值为 <strong>+5.3674</strong>（安慰剂改善更多），W8 又回到 −0.7820。在 36 例、缺失 55.6% 的亚组里，这种符号摆动属于噪声范围。<strong>逐访视挑出"最好的那个 P 值"是选择性报告</strong>，必须整体呈现五个访视。</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>SE 随访视递增，是信息量在流失</h4>
+        <p>SE 从 4.0327（W2）升到 12.7445（W16），DF 从 68.9 降到 51.7。这不是模型变差，而是<strong>后段可用观测越来越少</strong>。W16 的 CI 宽达 51.16，说明"点估计最大"与"证据最强"是两回事。</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h4>差值可以分解，便于复核</h4>
+        <p>W16 的差值 = W12 已有的差值 + W12→W16 新增的分离：<br>
+        $\underbrace{-24.7700}_{\text{W16}} = \underbrace{(-4.8915)}_{\text{W12}} + \underbrace{(-19.8785)}_{\text{W12}\to\text{W16}}$<br>
+        "新增分离"可两条途径独立算出、互为复核：<br>
+        ① 从差值表：$(-24.7700) - (-4.8915) = -19.8785$；<br>
+        ② 从 LSMean：$({-43.2597}+36.4181) - ({-18.4896}+31.5267) = (-6.8416) - (13.0371) = -19.8787$。<br>
+        两条途径相差 0.0002，来自 LSMean 四位小数的<strong>显示舍入</strong>，不是错误。这一步能验证报表拼接是否取错了访视。</p>
+      </div>
+    </div>
+  </div>
+
+  <h4 style="margin-top:22px;">W16 的 −24.77，临床结论该怎么写</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>维度</th><th>本例事实</th><th>可以写 / 不可以写</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>方向</strong></td>
+          <td>点估计为负，终点越低越好 → 方向上支持研究药物</td>
+          <td>✅ 可以说"数值上更有利于研究药物"；<br>❌ 不能说"研究药物显著优于安慰剂"</td>
+        </tr>
+        <tr>
+          <td><strong>统计不确定性</strong></td>
+          <td>95% CI (−50.35, 0.81) 跨越 0，P = 0.0574</td>
+          <td>✅ 可以说"与无差异相容，不能排除无效"；<br>❌ 不能写"P 接近 0.05，因此有效"</td>
+        </tr>
+        <tr>
+          <td><strong>幅度</strong></td>
+          <td>CI 下限 −50.35 提示若真有效幅度可能很大；上限 0.81 提示几乎不能排除轻微不利</td>
+          <td>✅ 可以说"估计精度不足以定性"；<br>❌ 不能只报点估计而不报 CI</td>
+        </tr>
+        <tr>
+          <td><strong>临床重要性</strong></td>
+          <td>需与 SAP 预先规定的 MID 比较</td>
+          <td>✅ 把点估计与 CI 同 MID 界值一起画在图上；<br>❌ 事后找"看起来合适"的界值</td>
+        </tr>
+        <tr>
+          <td><strong>证据级别</strong></td>
+          <td>36 例亚组、缺失 55.6%、UN 未收敛回退 CS</td>
+          <td>✅ 标注"探索性 / 一致性考察"；<br>❌ 作为确证性结论</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-title">统计显著 ≠ 临床重要</div>
+    两者交叉出四种情形，处理方式完全不同：
+    <div class="table-wrap" style="margin-top:10px;">
+      <table>
+        <thead><tr><th></th><th>临床幅度 ≥ MID</th><th>临床幅度 &lt; MID</th></tr></thead>
+        <tbody>
+          <tr><th>P &lt; 0.05</th><td>既显著又重要 —— 最强结论</td><td>显著但不重要 —— 需说明临床价值有限</td></tr>
+          <tr><th>P ≥ 0.05</th><td>重要但不显著 —— <strong>本例属于此类区间</strong>：幅度可能可观但证据不足，应如实报告并提示样本量限制</td><td>既不显著也不重要</td></tr>
+        </tbody>
+      </table>
+    </div>
+    判定时必须用<strong>CI 与 MID 的关系</strong>，而不是只看 P 值是否过线：CI 完全落在 MID 之外才是最强的"临床重要"证据。
+  </div>
+
+  <div class="callout key">
+    <div class="callout-title">程序员的解读边界</div>
+    统计程序员负责把<strong>数字、方向、不确定性、方法学限制</strong>准确呈现出来；<strong>"这个结果是否有临床意义"由医学与统计师判断</strong>。交付 TLF 时应确保：终点方向在表头写明（"较基线变化，负值表示改善"）、五个访视整体呈现而非挑选、缺失率与结构回退在脚注中可见、主分析与敏感性分析并列 —— 做到这些，解读的责任边界就清楚了。
+  </div>
+
+</section>
+
+<!-- ==========================================
+     S23: 方差参数的计算原理与参数估计推导
+     ========================================== -->
+<section class="sec" id="s23">
+  <div class="sec-head">
+    <div class="sec-ghost">23</div>
+    <div class="sec-title">
+      <h2>方差参数的计算原理：REML 全链路推导</h2>
+      <p class="sec-subtitle">从 $V$ 的构造到 score、Fisher 信息、迭代收敛，再到 Kenward-Roger</p>
+      <div class="sec-chips">
+        <span class="badge badge-accent">REML</span>
+        <span class="badge badge-primary">Newton-Raphson</span>
+        <span class="badge badge-success">Fisher Information</span>
+        <span class="badge badge-warning">Kenward-Roger</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>23.1 模型与符号</h3>
+  <p>MMRM 是<strong>没有随机效应</strong>的混合模型：$Z = 0$，$G$ 不出现，因此 $V = R$。对受试者 $i$：</p>
+
+  <p style="text-align:center;font-size:18px;margin:20px 0">
+    $y_i = X_i\boldsymbol\beta + e_i,\qquad e_i \sim N(0,\ V_i)$
+  </p>
+
+  <p>全部受试者堆叠后 $V = \mathrm{blockdiag}(V_1,\dots,V_n)$，$\mathrm{rank}(X)=p$，$N=\sum_i m_i$。</p>
+
+  
+  <div class="figframe">
+    <div class="figframe-bar">
+      <span>图 23-1 · 协方差结构：同一张 V 矩阵的不同参数共享方式</span>
+      <span class="fig-actions"><span class="fig-hint">可切换风格 / 演示 / 导出 PNG</span><button class="fig-btn" type="button" data-src="figs/fig23-cov-structures.html?kiosk=1" data-dh="719" data-title="图 23-1 · 协方差结构：同一张 V 矩阵的不同参数共享方式" onclick="openFig(this)">⤢ 全屏查看</button></span>
+    </div>
+    <div class="fig-scale" style="aspect-ratio:1280/719"><iframe src="figs/fig23-cov-structures.html?kiosk=1" style="width:1280px;height:719px" title="协方差结构参数共享示意图" loading="lazy"></iframe></div>
+    <div class="figframe-note">UN 不共享任何格子（n 个访视即 n(n+1)/2 个参数：n=5 时 15 个，n=6 时 21 个，推导见 <a href="#s11">S11 参数沙盘</a>），CS 把方差与相关全部压缩成 2 个参数。参数越多越易不收敛，越少越易模型误设。</div>
+  </div>
+
+  <h3>23.2 $V$ 的构造：缺失是怎么进入矩阵的</h3>
+  <p>这是理解"MMRM 不填补缺失"的关键。设 $\Sigma$ 是 $T\times T$ 的完整访视协方差矩阵，受试者 $i$ 实际观测到的访视下标集合为 $\mathcal{O}_i$（如 $\{1,3,5\}$ 表示只有 W2、W8、W16 有数据），则</p>
+
+  <p style="text-align:center;font-size:18px;margin:20px 0">
+    $V_i = \Sigma[\mathcal{O}_i,\ \mathcal{O}_i]$
+  </p>
+
+  <p>即<strong>取出 $\Sigma$ 对应的行与列构成子矩阵</strong>。受试者 $i$ 贡献 $m_i=|\mathcal{O}_i|$ 行，不同受试者的 $m_i$ 可以不同。<strong>全程没有任何一步需要填补缺失值</strong>——这就是 MAR 下 MMRM 能直接使用不完整纵向数据的矩阵解释，也是它与 LOCF / MI 的根本区别。</p>
+
+  <div class="callout key">
+    <div class="callout-title">直接推论</div>
+    由于 $V_i$ 的维数随缺失模式变化，$\log|V| = \sum_i \log|V_i|$ <strong>不能</strong>化成 $N\log|\Sigma|$ 这样的简单形式。这正是 MMRM 必须迭代求解、而不像均衡 ANOVA 那样有闭式解的原因。
+  </div>
+
+  <h3>23.3 从 ML 到 REML：把 $\boldsymbol\beta$ 积分掉</h3>
+  <p>完整数据的对数似然为</p>
+  <p style="text-align:center;font-size:17px;margin:18px 0">
+    $\ell_{ML}(\boldsymbol\beta,\theta) = -\dfrac{N}{2}\log 2\pi - \dfrac12\log|V| - \dfrac12 (y-X\boldsymbol\beta)'V^{-1}(y-X\boldsymbol\beta)$
+  </p>
+  <p>ML 把 $\boldsymbol\beta$ 当作未知参数一起估计，导致方差参数被<strong>系统性低估</strong>（未扣除 $p$ 个自由度）。REML 的做法是把 $\boldsymbol\beta$ 从似然中"积分掉"，只基于 $N-p$ 个与 $\boldsymbol\beta$ 正交的误差对比做推断。</p>
+
+  <p>核心的代数分解（关键一步）：</p>
+  <p style="text-align:center;font-size:17px;margin:18px 0">
+    $(y-X\boldsymbol\beta)'V^{-1}(y-X\boldsymbol\beta) = r'V^{-1}r + (\boldsymbol\beta-\hat{\boldsymbol\beta})'(X'V^{-1}X)(\boldsymbol\beta-\hat{\boldsymbol\beta})$
+  </p>
+  <p>其中 $\hat{\boldsymbol\beta} = (X'V^{-1}X)^{-1}X'V^{-1}y$ 是 GLS 估计，$r = y - X\hat{\boldsymbol\beta}$。右侧第二项与 $\boldsymbol\beta$ 有关、与 $\theta$ 无关（在积分时 $\hat{\boldsymbol\beta}$ 视为常量），于是</p>
+  <p style="text-align:center;font-size:17px;margin:18px 0">
+    $\int \exp\Big\{-\tfrac12(\boldsymbol\beta-\hat{\boldsymbol\beta})'(X'V^{-1}X)(\boldsymbol\beta-\hat{\boldsymbol\beta})\Big\}\,d\boldsymbol\beta = (2\pi)^{p/2}\,|X'V^{-1}X|^{-1/2}$
+  </p>
+  <p>整理得到 REML 对数似然：</p>
+
+  <div class="callout tip">
+    <div class="callout-title">REML 目标函数</div>
+    <p style="margin:0 0 10px">$$\ell_R(\theta) = -\frac{N-p}{2}\log 2\pi - \frac12\log|V| - \frac12\log|X'V^{-1}X| - \frac12 r'V^{-1}r$$</p>
+    <p style="margin:0">即 SAS 最小化的目标：$$\boxed{-2\ell_R = \underbrace{(N-p)\log 2\pi}_{\text{常数项，最易漏}} + \log|V| + \log|X'V^{-1}X| + r'V^{-1}r}$$</p>
+  </div>
+
+  <div class="callout danger-callout">
+    <div class="callout-title">自研实现时最容易漏的一项</div>
+    括号里的 $(N-p)\log 2\pi$ 与 $\theta$ 无关，<strong>不影响参数估计值，但影响 −2 Res Log Likelihood 的数值</strong>。SAS 报告的 −2RLL 含这一项。漏掉它，本例会差出
+    $(N-p)\log 2\pi = 69\times 1.8379 = \mathbf{126.8}$，
+    足以让你以为自己算错了。我在实现时正是靠这个差值定位到问题：自研引擎最初给出 421.18，加上常数项后 547.996，与真实输出的 545.711 同量级。
+  </div>
+
+  <h3>23.4 Profiling：先消掉 $\boldsymbol\beta$ 与残差尺度</h3>
+  <p>输出里的 <em>Residual Variance Method: Profile</em> 指的是：SAS 把残差方差"profile"出去——即把 $V$ 写成 $\sigma^2 \tilde V(\tilde\theta)$，对给定的 $\tilde\theta$ 解析地求出 $\hat\sigma^2$，再代回目标函数，使优化只在降维后的参数空间进行。这既减少迭代维数，也改善数值稳定性。</p>
+  <p>$\hat{\boldsymbol\beta}$ 的处理同理：它总是取 GLS 闭式解，因此目标函数实际上只依赖 $\theta$。</p>
+
+  <h3>23.5 Score 与 Fisher 信息的推导</h3>
+  <p>记</p>
+  <p style="text-align:center;font-size:17px;margin:16px 0">
+    $C = (X'V^{-1}X)^{-1},\qquad P = V^{-1} - V^{-1}XCX'V^{-1},\qquad V_h = \dfrac{\partial V}{\partial\theta_h}$
+  </p>
+  <p>对 $-2\ell_R$ 逐项求偏导（利用 $\partial V^{-1}/\partial\theta_h = -V^{-1}V_hV^{-1}$）：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>项</th><th>偏导</th></tr></thead>
+      <tbody>
+        <tr><td>$\log|V|$</td><td>$\operatorname{tr}(V^{-1}V_h)$</td></tr>
+        <tr><td>$\log|X'V^{-1}X|$</td><td>$-\operatorname{tr}\!\big(C\,X'V^{-1}V_hV^{-1}X\big)$</td></tr>
+        <tr><td>$r'V^{-1}r$</td><td>$-r'V^{-1}V_hV^{-1}r$（由包络定理，$\hat{\boldsymbol\beta}$ 视为固定）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>关键恒等式：$V^{-1}r = V^{-1}(y-X\hat{\boldsymbol\beta}) = \big(V^{-1} - V^{-1}XCX'V^{-1}\big)y = Py$，因此</p>
+  <p style="text-align:center;font-size:17px;margin:16px 0">
+    $r'V^{-1}V_hV^{-1}r = y'PV_hPy$
+  </p>
+  <p>又 $\operatorname{tr}(PV_h) = \operatorname{tr}(V^{-1}V_h) - \operatorname{tr}\!\big(CX'V^{-1}V_hV^{-1}X\big)$，三项合并即得：</p>
+
+  <div class="callout tip">
+    <div class="callout-title">REML score 与 Fisher 信息</div>
+    <p style="margin:0 0 10px">$$s_h \;=\; \frac{\partial \ell_R}{\partial\theta_h} \;=\; -\frac12\operatorname{tr}(P V_h) \;+\; \frac12\,y'PV_hPy$$</p>
+    <p style="margin:0">$$\mathcal{I}_{hj} \;=\; E\!\left[-\frac{\partial^2\ell_R}{\partial\theta_h\partial\theta_j}\right] \;=\; \frac12\operatorname{tr}(P V_h P V_j)$$</p>
+  </div>
+
+  <p><strong>实现校验</strong>：我把解析的 $\mathcal I$ 与用有限差分算出的 $\tfrac12\nabla^2(-2\ell_R)$ 逐一比对，最大相对偏差约 4%（有限差分在目标函数量级为 548、步长 $10^{-4}$ 时的正常误差）。两者一致说明上面的推导与代码实现是自洽的。</p>
+
+  
+  <div class="figframe">
+    <div class="figframe-bar">
+      <span>图 23-2 · REML 估计的迭代结构</span>
+      <span class="fig-actions"><span class="fig-hint">β 有闭式解，θ 只能迭代</span><button class="fig-btn" type="button" data-src="figs/fig23-reml-loop.html?kiosk=1" data-dh="1330" data-title="图 23-2 · REML 估计的迭代结构" onclick="openFig(this)">⤢ 全屏查看</button></span>
+    </div>
+    <div class="fig-scale" style="aspect-ratio:1280/1330"><iframe src="figs/fig23-reml-loop.html?kiosk=1" style="width:1280px;height:1330px" title="REML 估计迭代流程" loading="lazy"></iframe></div>
+    <div class="figframe-note">每次迭代都是「给定 θ 更新 β，再更新 θ」的两步嵌套；未收敛时回到 GLS 步骤用新的 θ 重走一遍。</div>
+  </div>
+
+  <h3>23.6 迭代与收敛判据</h3>
+  <p>Fisher scoring / Newton-Raphson 的更新格式为</p>
+  <p style="text-align:center;font-size:18px;margin:18px 0">
+    $\theta^{(t+1)} = \theta^{(t)} + \mathcal{I}\big(\theta^{(t)}\big)^{-1}\, s\big(\theta^{(t)}\big)$
+  </p>
+  <p>实际实现还要加<strong>线搜索</strong>：若整步不能使目标函数下降，就把步长折半——真实输出的 Iteration 1 显示 <em>Evaluations = 2</em>，正是这一步多算了一次似然。</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>设置</th><th>SAS 默认</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td><code>MAXITER=</code></td><td>50</td><td>最大迭代次数；超出 → <em>Did not converge</em></td></tr>
+        <tr><td><code>MAXFUNC=</code></td><td>150</td><td>最大似然评估次数；超出 → <em>too many likelihood evaluations</em></td></tr>
+        <tr><td>Criterion</td><td>—</td><td><strong>基于梯度</strong>的收敛判据，不是相邻两次目标函数之差</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout note">
+    <div class="callout-title">本例的迭代轨迹</div>
+    <strong>真实输出</strong>：567.61403563 → 550.09118611 → 546.88419942 → 545.86323984 → 545.71577334 → 545.71133083 → 545.71132552（6 次迭代，Criterion 降至 $3\times10^{-8}$）。<br>
+    <strong>自研引擎</strong>：573.62166243 → 552.65358918 → 548.19334146 → 547.99669056 → 547.99633168 → 547.99633167（5 次迭代）。<br>
+    两者形状完全一致：第一步跨度最大，之后快速收敛——这是 CS 这种<strong>只有 2 个协方差参数</strong>的结构的典型表现。UN 有 15 个参数，似然曲面复杂得多，收敛也慢得多（参见 24 节 UN 失败的迭代记录）。
+  </div>
+
+  <h3>23.7 以 CS 为例把导数落到实处</h3>
+  <p>CS 结构下 $\Sigma = \sigma_{cs}J + \sigma^2_e I$，于是</p>
+  <p style="text-align:center;font-size:18px;margin:18px 0">
+    $\dfrac{\partial\Sigma}{\partial\sigma_{cs}} = J,\qquad \dfrac{\partial\Sigma}{\partial\sigma^2_e} = I$
+  </p>
+  <p>对受试者 $i$ 的分块 $V_i = S_i'\Sigma S_i$（$S_i$ 为选择矩阵），有 $\partial V_i/\partial\theta_h = S_i'(\partial\Sigma/\partial\theta_h)S_i$。代回 23.5 的两条公式即可——本例 $\mathcal I$ 为 $2\times2$：</p>
+  <p style="text-align:center;font-size:16px;margin:16px 0;font-family:var(--font-mono)">
+    I = [ 7.84e+00  3.34e+00 ;  3.34e+00  1.997e+01 ]&nbsp;&nbsp;（自研引擎输出，log 尺度）
+  </p>
+  <p>求逆并经 delta 法换算回原尺度后得到 SE(CS) = 28.33、SE(Residual) = 14.03，与真实输出置信区间反推的 ≈25、≈13.8 量级一致。</p>
+
+  <div class="callout warn">
+    <div class="callout-title">参数化的选择很重要</div>
+    实现时通常内部用 $\phi = (\log\sigma_{cs},\ \log\sigma^2_e)$ 保证正定性，再由 delta 法 $\mathrm{SE}(\sigma) = \sigma\cdot\mathrm{SE}(\log\sigma)$ 换算回原尺度。<strong>不要</strong>直接把内部参数化的 $\sqrt{\mathrm{diag}(\mathcal I^{-1})}$ 当成原尺度参数的标准误——我就在这里犯过一次错，得到的"CS 标准误"其实是 $\Sigma$ 第一个元素的标准误。
+  </div>
+
+  <h3>23.8 拟合统计量的 n 口径（数值演算）</h3>
+  <p>用真实输出的数值把三个指标完整算一遍（$d=2$，$N=80$，$\mathrm{rank}(X)=11$，有效受试者 $=36$，$-2\ell_R = 545.71132552$）：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>指标</th><th>公式</th><th>代入</th><th>结果</th><th>输出</th></tr></thead>
+      <tbody>
+        <tr><td>AIC</td><td>$-2\ell_R + 2d$</td><td>$545.7113 + 2\times2$</td><td>549.711</td><td><strong>549.7</strong> ✓</td></tr>
+        <tr><td>AICC</td><td>$-2\ell_R + \dfrac{2dn}{n-d-1}$</td><td>$545.7113 + \dfrac{2\cdot2\cdot69}{69-2-1}$</td><td>549.893</td><td><strong>549.9</strong> ✓</td></tr>
+        <tr><td>BIC</td><td>$-2\ell_R + d\log n$</td><td>$545.7113 + 2\ln 36$</td><td>552.878</td><td><strong>552.9</strong> ✓</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>三个公式、三个不同的 $n$（—、69、36）。SAS 文档对此有明确规定：AICC 采用 SAS 6 口径（REML 下 $n = N - \mathrm{rank}(X)$），BIC 采用 Dimensions 表中的<strong>有效受试者数</strong>。跨软件复核时若统一用一个 $n$，AIC/BIC 必然对不上。</p>
+
+  <h3>23.9 Kenward-Roger：为什么要调，以及怎么调</h3>
+  <p><strong>动机。</strong>$\hat{\boldsymbol\beta}$ 虽是无偏的，但 $\hat\Phi = (X'\hat V^{-1}X)^{-1}$ 作为 $\mathrm{Var}(\hat{\boldsymbol\beta})$ 的估计<strong>是有偏的</strong>——它把 $\hat\theta$ 当作已知的 $\theta$，忽略了估计协方差参数带来的额外变异。小样本下这会低估标准误、使推断过于乐观。Kackar–Harville 与 Kenward–Roger 的思路是对 $\hat\Phi$ 做泰勒展开修正。</p>
+
+  <p>沿用记号 $\Phi = (X'V^{-1}X)^{-1}$，并定义（对协方差参数 $\theta_h$）：</p>
+  <p style="text-align:center;font-size:16px;margin:16px 0">
+    $P_h = X'\dfrac{\partial V^{-1}}{\partial\theta_h}X,\qquad Q_{hj} = X'\dfrac{\partial V^{-1}}{\partial\theta_h}V\dfrac{\partial V^{-1}}{\partial\theta_j}X,\qquad R_{hj} = X'V^{-1}\dfrac{\partial^2 V}{\partial\theta_h\partial\theta_j}V^{-1}X$
+  </p>
+  <p>令 $W = \mathcal I^{-1}$（$\hat\theta$ 的渐近协方差矩阵）。Kenward-Roger 调整后的协方差矩阵为</p>
+
+  <div class="callout tip">
+    <div class="callout-title">KR 调整协方差矩阵</div>
+    <p style="margin:0">$$\hat\Phi_A = \hat\Phi + 2\hat\Phi\left\{\sum_{h=1}^{k}\sum_{j=1}^{k} W_{hj}\Big(Q_{hj} - P_h\hat\Phi P_j - \tfrac14 R_{hj}\Big)\right\}\hat\Phi$$</p>
+  </div>
+
+  <div class="callout key">
+    <div class="callout-title">参数化会影响 $R_{hj}$，这点必须知道</div>
+    若取 $\theta$ 为 $\Sigma$ 的<strong>元素本身</strong>，则 $\partial^2 V/\partial\theta_h\partial\theta_j = 0$，从而 $R_{hj}=0$，上式退化为<strong>线性 KR 近似</strong>。若取 Cholesky 因子元素为参数，$R_{hj}\neq 0$，结果会有细微差别。<br><br>
+    R 的 <code>mmrm</code> 包文档明确指出：<strong>要与 SAS 的 UN 结果对齐，应使用线性 KR 近似</strong>。我的实现正是取 $\theta = \mathrm{vech}(\Sigma)$，因此 $R_{hj}=0$，天然与 SAS 一致。
+  </div>
+
+  <p><strong>分母自由度。</strong>设检验 $H_0: K\boldsymbol\beta = 0$，$K$ 为 $c\times p$ 对比矩阵。令 $M = K'(K\Phi K)^{-1}K$，则</p>
+  <p style="text-align:center;font-size:16px;margin:16px 0">
+    $A_1 = \sum_{h,j} W_{hj}\,\mathrm{tr}(M\Phi P_h\Phi)\,\mathrm{tr}(M\Phi P_j\Phi),\qquad A_2 = \sum_{h,j} W_{hj}\,\mathrm{tr}(M\Phi P_h\Phi M\Phi P_j\Phi)$
+  </p>
+  <p style="text-align:center;font-size:16px;margin:16px 0">
+    $B = \dfrac{A_1 + 6A_2}{2c},\qquad g = \dfrac{(c+1)A_1 - (c+4)A_2}{(c+2)A_2},\qquad c_i = \dfrac{g_i}{3c + 2(1-g)}$
+  </p>
+  <p style="text-align:center;font-size:16px;margin:16px 0">
+    $E^* = \Big(1-\dfrac{A_2}{c}\Big)^{-1},\qquad V^* = \dfrac{2}{c}\cdot\dfrac{1 + c_1 B}{(1-c_2 B)^2(1-c_3 B)},\qquad \rho = \dfrac{V^*}{2(E^*)^2}$
+  </p>
+
+  <div class="callout tip">
+    <div class="callout-title">Kenward-Roger 分母自由度</div>
+    <p style="margin:0;text-align:center;font-size:19px">$$m = 4 + \frac{c + 2}{c\rho - 1}$$</p>
+  </div>
+
+  <p>其中 $(c_1,c_2,c_3) = \big(g,\ c-g,\ c+2-g\big)\big/\big(3c+2(1-g)\big)$。标量对比时 $c=1$，$F = t^2$，SAS 报告 $t = \hat\psi/\mathrm{SE}_{KR}$、自由度取 $m$。</p>
+
+  <div class="callout note">
+    <div class="callout-title">自检结果</div>
+    在均衡无缺失数据（60 受试者 × 5 访视）上：KR 调整后 SE 相对 model-based SE 的膨胀比 = <strong>1.0004</strong>，KR 自由度 = <strong>57.65</strong>，对应"受试者数 − 组数 = 58"。大样本下 KR 修正趋于消失、自由度回到受试者量级——这正是应有的行为，说明实现无误。<br><br>
+    在 22 节那套 80 条观测、36 名受试者的稀疏数据上，KR 的修正就明显得多：W16 差值的 SE 从 model-based 的 6.0156 膨胀到 7.3021（<strong>+21%</strong>），自由度降到 13.78。    <strong>样本越小、缺失越多、协方差参数估计越不稳定，KR 的修正越大</strong>——这正是小样本必须用 KR 而不是 model-based 的原因。
+  </div>
+</section>
+
+<!-- ==========================================
+     S24: 五类 SAS 报错的诊断决策树与修改策略
+     ========================================== -->
+<section class="sec" id="s24">
+  <div class="sec-head">
+    <div class="sec-ghost">24</div>
+    <div class="sec-title">
+      <h2>五类 SAS 报错：诊断决策树与修改策略</h2>
+      <p class="sec-subtitle">哪些是真错误、哪些只是提示、谁会引发谁——以 CS 回退为贯穿案例</p>
+      <div class="sec-chips">
+        <span class="badge badge-danger">Hessian 非正定</span>
+        <span class="badge badge-warning">AsyCov 奇异</span>
+        <span class="badge badge-warning">零方差不贡献 DF</span>
+        <span class="badge badge-danger">MAXFUNC</span>
+        <span class="badge badge-danger">Did not converge</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>24.1 先建立因果顺序：一张决策树</h3>
+  <p>这五条提示<strong>不是并列的</strong>。有些是"模型根本没拟合完"，有些是"拟合完了但结果不可信"，还有些只是需要记录在案的提示。分清层级，才能决定下一步动作。</p>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px 24px;margin:20px 0;font-size:15px;line-height:1.85">
+    <div style="font-weight:700;color:var(--primary);margin-bottom:12px">PROC MIXED 运行结束</div>
+    <div style="border-left:2px solid var(--border-strong);padding-left:16px;margin-left:6px">
+      <div><strong>Q1.</strong> <code>ConvergenceStatus.reason</code> 是否等于 <code>"Convergence criteria met."</code>？</div>
+      <div style="border-left:2px solid var(--danger);padding-left:16px;margin:10px 0 10px 8px">
+        <div style="color:var(--danger);font-weight:600">否 → 优化本身没完成</div>
+        <div style="margin-top:6px">├─ 日志：<em>"Stopped because of too many likelihood evaluations"</em> → 撞上 <strong>MAXFUNC</strong>（默认 150）</div>
+        <div>└─ 日志：<em>"Did not converge"</em> → 撞上 <strong>MAXITER</strong>（默认 50）</div>
+        <div style="margin-top:6px;color:var(--ink-secondary)">→ 见 24.5 / 24.6；若仍失败，按 SAP 回退链换结构</div>
+      </div>
+      <div style="border-left:2px solid var(--success);padding-left:16px;margin:10px 0 10px 8px">
+        <div style="color:var(--success);font-weight:600">是 → 迭代收敛了，但还要检查三件事</div>
+        <div style="margin-top:6px">├─ <strong>NOTE: final Hessian is not positive definite</strong> → 收敛点可能不是极大值，<strong>SE 不可信</strong>（24.2）</div>
+        <div>├─ <strong>NOTE: AsyCov ... singular ... generalized inverse was used</strong> → 协方差参数的 SE 不可靠，并会波及 KR（24.3）</div>
+        <div>└─ <strong>NOTE: Covariance parameters with zero variance do not contribute to DDFM=KR</strong> → 有参数落在 0 边界，DF 计算不含它（24.4）</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout key">
+    <div class="callout-title">一句话总结层级</div>
+    <strong>24.5 / 24.6（MAXFUNC、Did not converge）是"没跑完"</strong>——结果是无效的，必须换结构或改善初值。<br>
+    <strong>24.2 / 24.3（Hessian 非正定、AsyCov 奇异）是"跑完了但不可信"</strong>——点估计可能还能用，但标准误、CI、P 值不可靠。<br>
+    <strong>24.4（零方差不贡献 DF）是"需要记录"</strong>——通常不必改模型，但必须在 QC 与报告中说明。
+  </div>
+
+  
+  <div class="figframe">
+    <div class="figframe-bar">
+      <span>图 24-1 · 五类 SAS 提示的排查决策流</span>
+      <span class="fig-actions"><span class="fig-hint">先分类（跑完没有），再决定改不改模型</span><button class="fig-btn" type="button" data-src="figs/fig24-troubleshoot.html?kiosk=1" data-dh="1290" data-title="图 24-1 · 五类 SAS 提示的排查决策流" onclick="openFig(this)">⤢ 全屏查看</button></span>
+    </div>
+    <div class="fig-scale" style="aspect-ratio:1280/1290"><iframe src="figs/fig24-troubleshoot.html?kiosk=1" style="width:1280px;height:1290px" title="MMRM SAS 报错排查决策流" loading="lazy"></iframe></div>
+    <div class="figframe-note">「未跑完」与「跑完但不可信」是两类完全不同的问题：前者先调数值，后者才考虑结构降级。</div>
+  </div>
+
+  <h3>24.2 Convergence criteria met but final Hessian is not positive definite</h3>
+  <div class="comparison-table">
+    <div class="comparison-card">
+      <h4>它在说什么</h4>
+      <ul>
+        <li>梯度判据<strong>已经满足</strong>（所以打了"Convergence criteria met"）</li>
+        <li>但收敛点处的 Hessian（二阶导数矩阵）<strong>不是正定的</strong></li>
+        <li>严格来说，该点<strong>不能确认为（局部）极大值</strong>——可能是鞍点或平原</li>
+      </ul>
+    </div>
+    <div class="comparison-card">
+      <h4>常见原因</h4>
+      <ul>
+        <li>协方差参数估计落在<strong>边界</strong>（方差≈0，或相关≈±1）</li>
+        <li><strong>过度参数化</strong>：UN 在小样本/稀疏数据上参数过多</li>
+        <li>某些访视对几乎没有共同观测，对应协方差不可识别</li>
+        <li>变量尺度差异过大导致数值条件数恶化</li>
+      </ul>
+    </div>
+  </div>
+  <p><strong>后果。</strong>协方差参数的标准误来自 $\mathcal I^{-1}$；Hessian 非正定意味着这个矩阵不可信，进而不支持可靠的标准误、CI 和 KR 自由度。</p>
+  <p><strong>修改策略（按优先级）：</strong></p>
+  <div class="step-cards">
+    <div class="step-card">
+      <div class="step-num">1</div>
+      <div class="step-content"><h4>先确认是不是边界问题</h4><p>看 <code>CovParms</code>：是否有估计值≈0、或相关系数接近 ±1。若有，说明模型在该处退化了。</p></div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">2</div>
+      <div class="step-content"><h4>检查单元格观测数</h4><p>逐单元格数观测数。空单元格或只有 1–2 条的单元格是 UN 非正定的首要原因。</p></div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">3</div>
+      <div class="step-content"><h4>降低结构复杂度</h4><p>UN → TOEP/TOEPH → AR(1)/ARH(1) → CS/CSH。参数越少，Hessian 越容易正定。</p></div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">4</div>
+      <div class="step-content"><h4>加 <code>ASYCOV</code> 看细节</h4><p><code>proc mixed ... asycov;</code> 输出渐近协方差矩阵，定位是哪几个参数之间出现了完全共线。</p></div>
+    </div>
+  </div>
+  <div class="callout warn">
+    <div class="callout-title">必须上报统计师的情形</div>
+    如果主分析结构出现这条提示，<strong>是否更换结构、换成哪一个，属于 SAP 层面的决策</strong>，程序员不能自行替换后不告而别。本指南贯穿案例里主结构 UN 失败、最终落到 CS，正是走 SAP 预先批准的回退链，而不是临时拍板。
+  </div>
+
+  <h3>24.3 Asymptotic variance matrix of covariance parameter estimates has been found to be singular and a generalized inverse was used</h3>
+  <p><strong>它在说什么。</strong>$\mathcal I$（或其估计）不可逆，SAS 改用<strong>广义逆</strong>（Moore–Penrose 伪逆）继续计算。这意味着协方差参数之间存在<strong>线性依赖</strong>——模型里有"多余"的协方差参数。</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>典型触发原因</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>参数落在边界</td><td>某方差估为 0，其渐近方差也为 0，导致矩阵奇异</td></tr>
+        <tr><td>过度参数化</td><td>如 UN 在只有 36 例、80 条观测的亚组上要估 15 个参数</td></tr>
+        <tr><td>不必要的 <code>GROUP=</code></td><td>分组估计协方差使参数翻倍，小亚组上极易奇异</td></tr>
+        <tr><td>尺度问题</td><td>某些参数量级极小，数值上接近 0</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><strong>后果。</strong>协方差参数的标准误不可靠。更要紧的是：<strong>Kenward-Roger 的计算依赖 $W=\mathcal I^{-1}$</strong>，广义逆会改变 $W$，从而影响 $\hat\Phi_A$ 与自由度 $m$。所以这条提示不是"只影响协方差参数那张表"，它会一路传导到主终点的 SE、CI 和 P 值。</p>
+  <p><strong>修改策略：</strong>与 24.2 相同的降复杂度路径；去掉不必要的 <code>GROUP=</code>；检查是否有冗余的协方差结构（例如同时指定 <code>RANDOM</code> 与 <code>REPEATED</code> 造成重复建模）。</p>
+
+  <h3>24.4 Covariance parameters with zero variance do not contribute to degrees of freedom computed by DDFM=KENWARDROGER</h3>
+  <p><strong>它在说什么。</strong>有若干个协方差参数被估成 <strong>0</strong>（落在边界上）。Kenward-Roger 的自由度公式要对所有协方差参数求和，但零方差参数不携带不确定性信息，因此<strong>不计入</strong>自由度计算。</p>
+  <div class="callout note">
+    <div class="callout-title">这是 NOTE，不是 ERROR</div>
+    模型照常给出结果，通常<strong>不需要</strong>因此修改模型。但它是一个必须记录的事实：自由度的计算基础与你以为的不同。
+  </div>
+  <p><strong>如何确认。</strong>打开 <code>CovParms</code>，看是否有 Estimate 恰为 0 或极其接近 0 的行。零方差常见于：随机效应方差被估为 0（说明该层变异不存在）、或某访视方差为 0。</p>
+  <p><strong>处理建议：</strong></p>
+  <ul>
+    <li><strong>记录</strong>：在 QC 日志与 CSR 脚注中写明"有 $k$ 个零方差协方差参数未计入 KR 自由度"。</li>
+    <li><strong>评估</strong>：零方差是否意味着结构选得过大？若是，可考虑更简洁的结构（但这属于统计师决策）。</li>
+    <li><strong>不要</strong>为了让这条提示消失而随意加约束或改结构——改变自由度计算基础会影响推断结论。</li>
+  </ul>
+
+  <h3>24.5 Stopped because of too many likelihood evaluations</h3>
+  <p><strong>它在说什么。</strong>似然函数的<strong>评估次数</strong>达到 <code>MAXFUNC=</code>（默认 <strong>150</strong>）。注意：这与"迭代次数"不是一回事——每次迭代内部若做线搜索（步长折半），会消耗多次评估。</p>
+  <p><strong>本指南的实跑案例正是这一条。</strong>自研引擎在相同骨架数据上拟合 UN（15 参数）时：</p>
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="codeblock-lang">诊断输出</span><button class="codeblock-copy">复制</button></div>
+<pre><code>UN 迭代史（未收敛现场）：
+    iter  0   -2 Res Log Like = 584.77064213
+    iter  1   -2 Res Log Like = 584.77064213
+    iter  2   -2 Res Log Like = 578.88065859
+    iter  3   -2 Res Log Like = 572.17005138
+    ...
+    iter 12   -2 Res Log Like = 540.99523007
+    iter 13   -2 Res Log Like = 540.81729794
+    → too_many_likelihood_evaluations</code></pre>
+  </div>
+  <p>注意这个形态：目标函数<strong>仍在持续下降</strong>（584.77 → 540.82），但下降速度越来越慢。这正是"似然面平坦 + 参数过多"的典型表现——不是算法坏了，而是<strong>数据提供的信息不足以支撑 15 个协方差参数</strong>。对比 CS 结构 5 次迭代就收敛，差距一目了然。</p>
+  <p><strong>修改策略：</strong></p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>手段</th><th>做法</th><th>评价</th></tr></thead>
+      <tbody>
+        <tr><td>提高上限</td><td><code>proc mixed maxfunc=1000 maxiter=200;</code></td><td>可救一时；若本质是数据不支持，提高上限只会多等一会儿然后照样失败</td></tr>
+        <tr><td>改善初值</td><td><code>parms / ...</code> 或用 <code>PARMSDATA=</code> 提供合理初值</td><td>有效；初值离解太远是常见原因</td></tr>
+        <tr><td><strong>简化结构</strong></td><td>UN → TOEPH → ARH(1) → CSH → CS</td><td><strong>首选</strong>：本例中 CS 只需 5 次迭代即收敛</td></tr>
+        <tr><td>检查数据</td><td>单元格观测数、是否有异常值、是否误把访视当 SUBJECT=</td><td>数据问题导致的不收敛，改参数是南辕北辙</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>24.6 Did not converge</h3>
+  <p><strong>它在说什么。</strong><strong>迭代次数</strong>达到 <code>MAXITER=</code>（默认 <strong>50</strong>）而收敛判据仍未满足。与 24.5 的区别在于"卡在哪个计数器上"。</p>
+  <p><strong>典型形态：</strong>目标函数在若干次迭代后<strong>来回震荡</strong>或下降极其缓慢。常见原因是似然面存在狭长的"山谷"（参数间高度相关），或者参数落在边界附近反复挣扎。</p>
+  <p><strong>修改策略：</strong>与 24.5 基本一致，但额外建议：</p>
+  <ul>
+    <li>先用 <code>parms</code> 语句从多个初值试探，判断是"初值问题"还是"结构问题"。</li>
+    <li>若多个合理初值都失败，<strong>基本可以确定是数据不支持该结构</strong>，应直接走回退链，而不是继续堆 <code>MAXITER</code>。</li>
+    <li>检查是否有<strong>近乎完全共线</strong>的固定效应（例如某访视只有一个治疗组有数据）。</li>
+  </ul>
+
+  <h3>24.7 贯穿案例：从 UN 失败到 CS 的生产级回退</h3>
+  <p>把上面几条串起来，看真实项目里是怎么处理的（代码已掩蔽：</p>
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="codeblock-lang">SAS（掩蔽后）</span><button class="codeblock-copy">复制</button></div>
+<pre><code>/* 步骤 1：跑之前先清空，防止不收敛时残留旧结果 */
+proc datasets lib=work nolist;
+    delete lsm diffs;
+quit;
+
+/* 步骤 2：先探 UN，只取 ConvergenceStatus */
+ods select none;
+ods output ConvergenceStatus=conv_un;
+proc mixed data=sub_ana(where=(chg>.)) method=reml;
+    class usubjid trt01pn avisitn;
+    model chg = base trt01pn avisitn trt01pn*avisitn / ddfm=kr residual;
+    repeated avisitn / subject=usubjid type=un;
+run;
+ods select all;
+
+/* 步骤 3：用 reason 精确判定，而不是看有没有 ERROR */
+proc sql noprint;
+    select count(*) into :fail_cnt from conv_un
+    where reason ne "Convergence criteria met.";
+quit;
+
+/* 步骤 4：失败则遍历回退链，记录各结构 AIC，取最小者重跑 */
+%let methlist=TOEPH|ARH(1)|CS|CSH|SP(POW)(avisitn_n);</code></pre>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>要点</th><th>为什么重要</th></tr></thead>
+      <tbody>
+        <tr><td><strong>先 delete 再跑</strong></td><td>PROC MIXED 不收敛时不会覆盖既有数据集，残留的 <code>lsm</code>/<code>diffs</code> 会被下游当成有效结果——这是最危险的一类静默错误</td></tr>
+        <tr><td><strong>用 reason 判定</strong></td><td><code>reason ne "Convergence criteria met."</code> 是唯一可靠的机器判定方式；日志无 ERROR ≠ 收敛</td></tr>
+        <tr><td><strong>回退链必须与 SAP 一致</strong></td><td>SAP 写的是 TOEPH(1) → ARH(1) → HCS → SP(POW) → CS；程序里若写成别的顺序或其他结构，属于偏离 SAP</td></tr>
+        <tr><td><strong>SP(POW) 需要连续时间</strong></td><td><code>SP(POW)(avisitn_n)</code> 用的是连续时间坐标，普通 <code>AR(1)</code> 只按访视<strong>顺序</strong>算滞后。把 AR(1) 的"滞后"解释成"实际周数"是错误的</td></tr>
+        <tr><td><strong>记录实际使用的结构</strong></td><td>本例最终用 CS。每个亚组用了什么结构应写入 QC 数据集（如 <code>covtype_log</code>），供审阅与 CSR 脚注使用</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout danger-callout">
+    <div class="callout-title">一个值得注意的命名差异</div>
+    部分 SAP 写 <strong>HCS</strong>（Heterogeneous Compound Symmetry），但 <strong>PROC MIXED 中对应的 TYPE= 名称是 <code>CSH</code></strong>。写 <code>TYPE=HCS</code> 会直接报错。核对 SAP 与代码时，这一类"同一结构、不同软件不同名"的坑需要专门过一遍：UN / TOEP / TOEPH / AR(1) / ARH(1) / CS / CSH / CSH 等。
+  </div>
+
+  <h3>24.8 交付前的最小检查清单</h3>
+  <div class="step-cards">
+    <div class="step-card"><div class="step-num">1</div><div class="step-content"><h4>收敛</h4><p><code>ConvergenceStatus</code> 已生成，且 <code>reason = "Convergence criteria met."</code>；日志中无 Hessian / AsyCov / 零方差相关 NOTE，或已有记录与批准。</p></div></div>
+    <div class="step-card"><div class="step-num">2</div><div class="step-content"><h4>结构</h4><p>Model Information 中的协方差结构与 SAP 一致；若发生回退，回退路径与 AIC 依据已记录。</p></div></div>
+    <div class="step-card"><div class="step-num">3</div><div class="step-content"><h4>数据</h4><p>受试者数、观测数、各单元格观测数与预期一致；<code>Read = Used</code> 或已解释 Not Used 的原因。</p></div></div>
+    <div class="step-card"><div class="step-num">4</div><div class="step-content"><h4>参数</h4><p>所有方差为正；相关系数在 (−1, 1) 内；无异常极端的估计值。</p></div></div>
+    <div class="step-card"><div class="step-num">5</div><div class="step-content"><h4>结果</h4><p>目标访视每条治疗组一行 LSMean；<code>AVISITN</code> 与 <code>_AVISITN</code> 都等于目标访视；SE、DF、CI、P 值来自同一条比较行。</p></div></div>
+    <div class="step-card"><div class="step-num">6</div><div class="step-content"><h4>稳定性</h4><p>改变协方差结构后，目标访视的 LSMean 差值与结论是否保持稳定；若敏感，需在报告中说明。</p></div></div>
+  </div>
+</section>
+
+
   <div style="text-align:center; padding:40px 0 20px; color:var(--ink-tertiary); font-size:14px;">
     <p>— End of Guide —</p>
     <p style="font-size:12px; margin-top:8px;">MMRM Deep Dive Guide v2.0 · Built with care for the biostatistics community</p>
   </div>
-</section>
-
 <button class="back-to-top" id="fabTop" title="回到顶部">↑</button>
 
 <script>
@@ -2619,6 +4674,79 @@ function toggleCollapsible(btn) {
 })();
 </script>
 <script src="interactive.js"></script>
+
+<div class="fig-modal" id="figModal" role="dialog" aria-modal="true" aria-label="图形全屏查看">
+  <div class="fig-modal-inner">
+    <div class="fig-modal-bar">
+      <span id="figModalTitle">图形全屏查看</span>
+      <span class="fig-modal-tools">
+        <button class="fig-btn" id="figModalNew">↗ 新窗口打开</button>
+        <button class="fig-btn" id="figModalClose">✕ 关闭 (Esc)</button>
+      </span>
+    </div>
+    <div class="fig-modal-body">
+      <iframe id="figModalFrame" src="about:blank" title="图形全屏查看"></iframe>
+    </div>
+  </div>
+</div>
+<script>
+/* ---- Figure full-view modal ---- */
+(function () {
+  var modal = document.getElementById('figModal');
+  if (!modal) return;
+  var frame = document.getElementById('figModalFrame');
+  var titleEl = document.getElementById('figModalTitle');
+  var lastFocus = null;
+
+  function close() {
+    modal.classList.remove('open');
+    document.body.classList.remove('fig-modal-open');
+    frame.src = 'about:blank';
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  /* kiosk 子页面按 1280×DH 固定排版，弹窗内等比缩放到可视区，完整不裁。
+     缩放比封顶 1（只缩不放）：放大只会引入模糊，且旧写法 scale>1 时
+     视觉区会向上越过顶栏，把「新窗口打开 / 关闭」按钮盖住。
+     iframe 绝对定位 + translate(-50%,-50%) scale() 在 body 层内精确居中。 */
+  function fitModal() {
+    if (!modal.classList.contains('open')) return;
+    var dh = parseFloat(frame.getAttribute('data-dh')) || 800;
+    var body = frame.parentElement;
+    var availW = body.clientWidth;
+    var availH = body.clientHeight;
+    var sc = Math.min(availW / 1280, availH / dh, 1);
+    if (!isFinite(sc) || sc <= 0) sc = 1;
+    frame.style.width = '1280px';
+    frame.style.height = dh + 'px';
+    frame.style.transform = 'translate(-50%,-50%) scale(' + sc + ')';
+  }
+  window.openFig = function (btn) {
+    lastFocus = btn;
+    titleEl.textContent = btn.getAttribute('data-title') || '图形全屏查看';
+    frame.setAttribute('data-dh', btn.getAttribute('data-dh') || '800');
+    frame.style.transform = 'none';
+    frame.src = btn.getAttribute('data-src') || 'about:blank';
+    modal.classList.add('open');
+    document.body.classList.add('fig-modal-open');
+    requestAnimationFrame(fitModal);
+    setTimeout(fitModal, 250);
+  };
+  document.getElementById('figModalClose').addEventListener('click', close);
+  document.getElementById('figModalNew').addEventListener('click', function () {
+    var s = frame.getAttribute('src');
+    if (s && s !== 'about:blank') window.open(s, '_blank', 'noopener');
+  });
+  modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+  window.addEventListener('resize', fitModal);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && modal.classList.contains('open')) close();
+  });
+  window.closeFig = close;
+})();
+</script>
+
+</div>
+</div>
 </body>
 </html>
 

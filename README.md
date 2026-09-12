@@ -22,7 +22,7 @@ Mixed Model for Repeated Measures — 从矩阵基础到监管应用
 
 ## 本地预览
 
-直接在浏览器中打开 `MMRM深入理解指南.html` 即可。
+直接在浏览器中打开 `index.html` 即可（依赖同目录的 `interactive.css`、`interactive.js` 与 `figs/` 下的图形页，请勿单独拷贝 HTML）。
 
 ## 特性
 

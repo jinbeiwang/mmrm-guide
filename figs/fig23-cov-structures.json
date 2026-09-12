@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "协方差结构：同一张 V 矩阵，不同的参数共享方式",
+    "output": "figs/fig23-cov-structures.html",
+    "viewBox": [1180, 640],
+    "animation": "trace",
+    "quality_profile": "showcase",
+    "locale": "zh-CN",
+    "views": [
+      { "id": "shared-matrix", "label": "从受试者到 V 矩阵", "focus": ["subj", "mat"], "note": "每个受试者贡献一个 R×R 分块，V 是分块对角矩阵。" },
+      { "id": "structure-choice", "label": "五种结构的参数共享", "focus": ["un", "toeph", "arh", "cs", "sppow"], "note": "参数从 15 个一路压缩到 2 个，压缩方式决定假设。" },
+      { "id": "tradeoff", "label": "偏差—方差权衡", "focus": ["risk", "bias", "aic"], "note": "参数越多越易不收敛，参数越少越易模型误设。" }
+    ]
+  },
+  "components": [
+    { "id": "subj", "type": "external", "label": "受试者 i", "sublabel": "W2/W4/W8/W12/W16", "pos": [40, 250], "size": [140, 64] },
+    { "id": "mat", "type": "database", "label": "V_i 5×5", "sublabel": "分块对角 V", "pos": [250, 240], "size": [150, 84], "tag": "R=5" },
+
+    { "id": "un", "type": "backend", "label": "TYPE=UN", "sublabel": "每个格子独立估计", "pos": [500, 40], "size": [150, 62], "tag": "15 参数" },
+    { "id": "toeph", "type": "backend", "label": "TYPE=TOEPH", "sublabel": "按滞后共享相关", "pos": [500, 140], "size": [150, 62], "tag": "9 参数" },
+    { "id": "arh", "type": "backend", "label": "TYPE=ARH(1)", "sublabel": "方差异质 + 指数相关", "pos": [500, 240], "size": [150, 62], "tag": "6 参数" },
+    { "id": "cs", "type": "backend", "label": "TYPE=CS", "sublabel": "方差齐性 + 相关恒定", "pos": [500, 340], "size": [150, 62], "tag": "2 参数" },
+    { "id": "sppow", "type": "backend", "label": "TYPE=SP(POW)", "sublabel": "连续时间相关", "pos": [500, 440], "size": [150, 62], "tag": "2 参数" },
+
+    { "id": "risk", "type": "security", "label": "不收敛 / 边界解", "sublabel": "参数越多风险越高", "pos": [780, 90], "size": [160, 68], "tag": "数值风险" },
+    { "id": "bias", "type": "messagebus", "label": "模型误设偏倚", "sublabel": "参数越少风险越高", "pos": [780, 300], "size": [160, 68], "tag": "推断风险" },
+    { "id": "aic", "type": "cloud", "label": "按 AIC 选结构", "sublabel": "SAP 预定义降级链", "pos": [780, 480], "size": [160, 68], "tag": "决策" }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "同一受试者内的重复测量协方差", "wraps": ["mat"] },
+    { "kind": "security-group", "label": "候选协方差结构（参数共享方式）", "wraps": ["un", "toeph", "arh", "cs", "sppow"] }
+  ],
+  "connections": [
+    { "id": "subj-to-mat", "from": "subj", "to": "mat", "label": "5 次观测", "variant": "emphasis" },
+    { "id": "mat-to-un", "from": "mat", "to": "un", "label": "无约束", "variant": "emphasis", "fromSide": "right", "toSide": "left" },
+    { "id": "un-to-toeph", "from": "un", "to": "toeph", "variant": "dashed", "fromSide": "bottom", "toSide": "top" },
+    { "id": "toeph-to-arh", "from": "toeph", "to": "arh", "variant": "dashed", "fromSide": "bottom", "toSide": "top" },
+    { "id": "arh-to-cs", "from": "arh", "to": "cs", "variant": "dashed", "fromSide": "bottom", "toSide": "top" },
+    { "id": "cs-to-sppow", "from": "cs", "to": "sppow", "variant": "dashed", "fromSide": "bottom", "toSide": "top" },
+    { "id": "un-to-risk", "from": "un", "to": "risk", "label": "15 个参数待估", "variant": "security", "fromSide": "right", "toSide": "left", "via": [[720, 71], [720, 124], [780, 124]] },
+    { "id": "cs-to-bias", "from": "cs", "to": "bias", "label": "强假设", "variant": "default", "fromSide": "right", "toSide": "left", "via": [[720, 371], [720, 334], [780, 334]] },
+    { "id": "risk-to-aic", "from": "risk", "to": "aic", "label": "权衡", "variant": "emphasis", "fromSide": "right", "toSide": "right", "via": [[990, 124], [1040, 124], [1040, 514]] },
+    { "id": "bias-to-aic", "from": "bias", "to": "aic", "label": "权衡", "variant": "emphasis", "fromSide": "right", "toSide": "right", "via": [[990, 334], [1000, 334], [1000, 514]] }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "V 只有一个，结构只是参数化方式",
+      "items": [
+        "所有结构描述的都是同一个 R×R 协方差矩阵 V_i",
+        "差别在于：哪些格子被强制共享同一个参数",
+        "UN 不共享任何格子，CS 把方差和相关全部压成两个参数"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "参数越多不等于越好",
+      "items": [
+        "UN 有 R(R+1)/2 个参数，R=5 时为 15 个",
+        "访视单元格稀疏或样本量小时极易落在边界或不收敛",
+        "SAP 需要预先写清 UN 失败后的降级链与选择准则"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "AIC 只是其中一把尺子",
+      "items": [
+        "AIC / AICC / BIC 使用的 n 口径不同，结论可能不一致",
+        "统计量之外还要看 CovParms 是否出现 0 或负值",
+        "最终选择必须与 SAP 一致，并在报告中说明"
+      ]
+    }
+  ]
+}

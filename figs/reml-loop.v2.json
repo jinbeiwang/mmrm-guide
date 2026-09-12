@@ -1,0 +1,231 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "MMRM 的 REML 估计迭代流程",
+    "output": "figs/fig23-reml-loop.html",
+    "animation": "trace",
+    "visual_preset": "signal-flow",
+    "quality_profile": "showcase",
+    "locale": "zh-CN",
+    "views": [
+      {
+        "id": "setup",
+        "label": "构造与初始化",
+        "focus": [
+          "build",
+          "init"
+        ],
+        "note": "把每个受试者的分块 V_i 拼成分块对角 V。"
+      },
+      {
+        "id": "loop",
+        "label": "迭代求解",
+        "focus": [
+          "gls",
+          "rll",
+          "score"
+        ],
+        "note": "β 用 GLS 闭式更新，θ 只能靠迭代求解。"
+      },
+      {
+        "id": "diagnose",
+        "label": "收敛与诊断",
+        "focus": [
+          "conv",
+          "out",
+          "fail"
+        ],
+        "note": "收敛不等于可信，还要看 Hessian 是否正定。"
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "setup",
+      "label": "构造 V(θ)"
+    },
+    {
+      "id": "init",
+      "label": "初值"
+    },
+    {
+      "id": "iter",
+      "label": "迭代求解"
+    },
+    {
+      "id": "diag",
+      "label": "收敛诊断"
+    },
+    {
+      "id": "exc",
+      "label": "异常分支",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "p1",
+      "label": "构造",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "p2",
+      "label": "迭代",
+      "fromCol": 2,
+      "toCol": 4,
+      "variant": "emphasis"
+    },
+    {
+      "id": "p3",
+      "label": "诊断",
+      "fromCol": 5,
+      "toCol": 5,
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "build",
+    "init",
+    "gls",
+    "rll",
+    "score",
+    "conv",
+    "out"
+  ],
+  "nodes": [
+    {
+      "id": "build",
+      "lane": "setup",
+      "col": 0,
+      "type": "database",
+      "label": "构建 X 与 V",
+      "sublabel": "分块对角"
+    },
+    {
+      "id": "init",
+      "lane": "init",
+      "col": 1,
+      "type": "backend",
+      "label": "初值 θ0",
+      "sublabel": "PARMS"
+    },
+    {
+      "id": "gls",
+      "lane": "iter",
+      "col": 2,
+      "type": "cloud",
+      "label": "GLS 更新 β",
+      "sublabel": "闭式解"
+    },
+    {
+      "id": "rll",
+      "lane": "iter",
+      "col": 3,
+      "type": "backend",
+      "label": "计算 -2RLL",
+      "sublabel": "目标函数"
+    },
+    {
+      "id": "score",
+      "lane": "iter",
+      "col": 4,
+      "type": "backend",
+      "label": "score 与信息阵",
+      "sublabel": "Fisher"
+    },
+    {
+      "id": "conv",
+      "lane": "diag",
+      "col": 4,
+      "type": "security",
+      "label": "收敛判断",
+      "sublabel": "ABSGCONV"
+    },
+    {
+      "id": "out",
+      "lane": "diag",
+      "col": 5,
+      "type": "external",
+      "label": "输出 CovParms",
+      "sublabel": "Fit 统计"
+    },
+    {
+      "id": "fail",
+      "lane": "exc",
+      "col": 5,
+      "type": "messagebus",
+      "label": "未收敛",
+      "sublabel": "结果无效"
+    }
+  ],
+  "edges": [
+    {
+      "from": "build",
+      "to": "init",
+      "variant": "emphasis"
+    },
+    {
+      "from": "init",
+      "to": "gls",
+      "variant": "emphasis"
+    },
+    {
+      "from": "gls",
+      "to": "rll",
+      "variant": "emphasis"
+    },
+    {
+      "from": "rll",
+      "to": "score",
+      "variant": "emphasis"
+    },
+    {
+      "from": "score",
+      "to": "conv",
+      "variant": "emphasis"
+    },
+    {
+      "from": "conv",
+      "to": "out",
+      "label": "收敛",
+      "variant": "emphasis"
+    },
+    {
+      "from": "conv",
+      "to": "fail",
+      "label": "超上限",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "β 与 θ 是两条不同的更新路线",
+      "items": [
+        "给定 θ 时 β̂ 有 GLS 闭式解，无需迭代",
+        "θ 没有闭式解，只能靠 Fisher scoring 或 Newton-Raphson",
+        "每次迭代都是「先更新 β，再更新 θ」的两步嵌套"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "REML 与 ML 的差别在投影矩阵",
+      "items": [
+        "REML 信息阵元素为 ½ tr(P V_h P V_j)",
+        "投影矩阵 P 完成了对固定效应自由度的扣除",
+        "这是小样本下 REML 方差估计偏差更小的原因"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "收敛不等于可信",
+      "items": [
+        "未收敛时回到第 2 步，用新的 θ 重新走一遍循环",
+        "ConvergenceStatus=0 只说明梯度足够小",
+        "Hessian 非正定或 AsyCov 奇异时 SE 与 DF 仍不可信"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "MMRM 输出数据集结构：语句 → ODS 表 → 落地数据集",
+    "output": "figs/fig20-ods-flow.html",
+    "viewBox": [1240, 820],
+    "animation": "trace",
+    "quality_profile": "showcase",
+    "locale": "zh-CN",
+    "views": [
+      { "id": "statements", "label": "四类触发语句", "focus": ["st_lsmeans", "st_lsmest", "st_slice", "st_store"], "note": "同一段 PROC MIXED 里，不同语句打开的 ODS 表完全不同。" },
+      { "id": "odstables", "label": "ODS 表与字段", "focus": ["t_lsmeans", "t_diffs", "t_lsmest", "t_slices"], "note": "LSMeans / Diffs / LSMEstimates / Slices 的字段口径在这里分岔。" },
+      { "id": "landing", "label": "落地与交付", "focus": ["itemstore", "plm", "ds_out", "tlf"], "note": "STORE 存的是模型对象本身，不是结果表。" }
+    ]
+  },
+  "stages": [
+    { "label": "PROC MIXED 语句" },
+    { "label": "ODS 输出表" },
+    { "label": "持久化 / 导出" },
+    { "label": "交付物" }
+  ],
+  "nodes": [
+    { "id": "st_lsmeans", "type": "frontend", "label": "LSMEANS", "sublabel": "TRTP*AVISIT / DIFF=CTRL CL", "stage": 0, "row": 0, "tag": "语句" },
+    { "id": "st_lsmest", "type": "frontend", "label": "LSMESTIMATE", "sublabel": "对 LSMean 做线性组合", "stage": 0, "row": 1, "tag": "语句" },
+    { "id": "st_slice", "type": "frontend", "label": "SLICE", "sublabel": "选项 / 独立语句", "stage": 0, "row": 2, "tag": "语句" },
+    { "id": "st_store", "type": "frontend", "label": "STORE", "sublabel": "out= 保存模型", "stage": 0, "row": 3, "tag": "语句" },
+
+    { "id": "t_lsmeans", "type": "backend", "label": "LSMeans", "sublabel": "Estimate / StdErr / DF / Alpha", "stage": 1, "row": 0, "tag": "ODS" },
+    { "id": "t_diffs", "type": "backend", "label": "Diffs", "sublabel": "组间差值，_trt vs _ctrl", "stage": 1, "row": 1, "tag": "ODS" },
+    { "id": "t_lsmest", "type": "backend", "label": "LSMEstimates", "sublabel": "Estimate / StdErr / t Value", "stage": 1, "row": 2, "tag": "ODS" },
+    { "id": "t_slices", "type": "backend", "label": "Slices", "sublabel": "Num DF / Den DF / F", "stage": 1, "row": 3, "tag": "ODS" },
+
+    { "id": "ds_out", "type": "database", "label": "ODS OUTPUT 数据集", "sublabel": "保留完整精度", "stage": 2, "row": 0, "tag": "统计结果层" },
+    { "id": "itemstore", "type": "cloud", "label": "Item Store", "sublabel": "X 矩阵 / β̂ / V̂ / θ̂", "stage": 2, "row": 2, "tag": "二进制" },
+    { "id": "plm", "type": "cloud", "label": "PROC PLM", "sublabel": "RESTORE = 复用模型", "stage": 2, "row": 4, "tag": "事后分析" },
+
+    { "id": "tlf", "type": "external", "label": "TLF 数据集", "sublabel": "唯一允许取整的一层", "stage": 3, "row": 1, "tag": "显示层" },
+    { "id": "score", "type": "external", "label": "SCORE / 新估计", "sublabel": "ESTIMATE / LSMESTIMATE", "stage": 3, "row": 3, "tag": "复用" }
+  ],
+  "flows": [
+    { "id": "f1", "from": "st_lsmeans", "to": "t_lsmeans", "label": "打开", "classification": "ODS 表", "variant": "emphasis", "route": "straight" },
+    { "id": "f2", "from": "st_lsmeans", "to": "t_diffs", "label": "DIFF= 触发", "classification": "ODS 表", "variant": "emphasis", "fromSide": "right", "toSide": "left", "via": [[300, 176], [300, 300]] },
+    { "id": "f3", "from": "st_lsmest", "to": "t_lsmest", "label": "打开", "classification": "ODS 表", "variant": "emphasis", "route": "straight" },
+    { "id": "f4", "from": "st_slice", "to": "t_slices", "label": "打开", "classification": "ODS 表", "variant": "emphasis", "route": "straight" },
+    { "id": "f5", "from": "t_lsmeans", "to": "ds_out", "label": "ODS OUTPUT", "classification": "原始精度", "variant": "default", "route": "straight" },
+    { "id": "f6", "from": "t_diffs", "to": "ds_out", "label": "ODS OUTPUT", "classification": "原始精度", "variant": "default", "fromSide": "right", "toSide": "bottom", "via": [[720, 300], [720, 470], [790, 470]] },
+    { "id": "f7", "from": "t_lsmest", "to": "ds_out", "label": "ODS OUTPUT", "classification": "原始精度", "variant": "dashed", "fromSide": "right", "toSide": "right", "via": [[1000, 424], [1046, 424], [1046, 500]] },
+    { "id": "f8", "from": "st_store", "to": "itemstore", "label": "保存模型对象", "classification": "非表格", "variant": "security", "fromSide": "right", "toSide": "left", "via": [[300, 612], [300, 546], [700, 546]] },
+    { "id": "f9", "from": "itemstore", "to": "plm", "label": "RESTORE", "classification": "复用模型", "variant": "security", "route": "straight", "labelAt": [530, 428] },
+    { "id": "f10", "from": "ds_out", "to": "tlf", "label": "格式化", "classification": "显示层", "variant": "emphasis", "route": "straight" },
+    { "id": "f11", "from": "plm", "to": "score", "label": "追加估计", "classification": "不重跑模型", "variant": "dashed", "route": "straight" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "语句决定打开哪张表",
+      "items": [
+        "LSMEANS ... / DIFF 同时产生 LSMeans 与 Diffs 两张表",
+        "LSMESTIMATE 产生 LSMEstimates，与 Diffs 是并列关系而非替代",
+        "SLICE 既可作为 LSMEANS 的选项，也可作为独立语句"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "STORE 存的是模型不是表",
+      "items": [
+        "Item Store 保存设计矩阵、β̂、V̂ 与协方差参数估计",
+        "PROC PLM RESTORE 后可直接追加 ESTIMATE / LSMESTIMATE",
+        "适合需要在同一个模型上回答多个新问题的场景"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "只在显示层四舍五入",
+      "items": [
+        "ODS 导出数据集必须保留完整数值精度",
+        "治疗差值由模型直接估计，不能用取整后的 LSMean 相减",
+        "SE、DF、置信区间同样必须来自模型输出"
+      ]
+    }
+  ]
+}
